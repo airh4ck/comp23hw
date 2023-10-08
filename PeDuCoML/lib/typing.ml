@@ -72,7 +72,6 @@ type error =
   | `NoConstructor of identifier
   | `UnificationFailed of typ * typ
   | `NotReachable
-  | `NoHandlerProvided
   ]
 
 let pp_error fmt (err : error) =

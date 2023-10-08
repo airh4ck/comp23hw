@@ -31,7 +31,7 @@ let pp_unary_operator fmt = function
 ;;
 
 let rec pp_pattern fmt =
-  let open Caml in
+  let open Stdlib in
   let get_format = function
     | PLiteral _ | PIdentifier _ -> format_of_string "%a"
     | _ -> format_of_string "(%a)"
@@ -60,10 +60,10 @@ let rec pp_pattern fmt =
 
 let rec pp_expression fmt =
   let get_format = function
-    | ELiteral _ | EIdentifier _ -> Caml.format_of_string "%a"
-    | _ -> Caml.format_of_string "(%a)"
+    | ELiteral _ | EIdentifier _ -> Stdlib.format_of_string "%a"
+    | _ -> Stdlib.format_of_string "(%a)"
   in
-  let ( ^^ ) = Caml.( ^^ ) in
+  let ( ^^ ) = Stdlib.( ^^ ) in
   let pp_list fmt delimiter =
     pp_print_list
       ~pp_sep:(fun fmt _ -> fprintf fmt delimiter)
@@ -81,7 +81,7 @@ let rec pp_expression fmt =
   | EIdentifier id -> fprintf fmt "%s" id
   | EBinaryOperation (binary_operator, left_operand, right_operand) ->
     let format =
-      Caml.format_of_string
+      Stdlib.format_of_string
         (match left_operand, right_operand with
          | ELiteral _, ELiteral _
          | ELiteral _, EIdentifier _

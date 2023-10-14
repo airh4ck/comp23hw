@@ -6,4 +6,5 @@
  (inline_tests)
  (instrumentation
   (backend bisect_ppx))
- (name PeDuCoML))
+ (name PeDuCoML)
+ (public_name PeDuCoML.Lib))

@@ -1,2 +1,3 @@
 (test
- (name PeDuCoML))
+ (name Test)
+ (libraries PeDuCoML.Lib stdio))

@@ -221,12 +221,28 @@ let declaration_anf env = function
   | DDeclaration (name, pattern_list, expr)
   | DRecursiveDeclaration (name, pattern_list, expr) ->
     let* fresh_var = fresh in
-    let env = Base.Map.update env name ~f:(fun _ -> fresh_var) in
+    let env = Base.Map.set env ~key:name ~data:fresh_var in
     expression_anf env (efun pattern_list expr) (fun imm -> return @@ acimm imm)
 ;;
 
-(* let run_convert expression = run @@ convert expression (fun imm -> return (acimm imm))
+let convert (program : declaration list) =
+  let rec helper env = function
+    | head :: tail ->
+      let* head_declaration = declaration_anf env head in
+      let name =
+        match head with
+        | DDeclaration (name, _, _) | DRecursiveDeclaration (name, _, _) -> name
+      in
+      let* fresh_var = fresh in
+      let* tail_declarations = helper (Base.Map.set env ~key:name ~data:fresh_var) tail in
+      return @@ (head_declaration :: tail_declarations)
+    | _ -> return []
+  in
+  helper (Base.Map.empty (module Base.String)) program
+;;
 
+let run_convert program = run @@ convert program
+(*
 let%test _ =
   run_convert @@ EBinaryOperation (Div, ELiteral (LInt 4), ELiteral (LInt 2))
   = ALet (1, CBinaryOperation (Div, ImmInt 4, ImmInt 2), ACExpr (CImm (ImmId 1)))

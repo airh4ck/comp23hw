@@ -4,11 +4,21 @@ open Format
 let pp_immexpr fmt = function
   | ImmInt num -> fprintf fmt "%d" num
   | ImmString str -> fprintf fmt "\"%s\"" str
+  | ImmChar smb -> fprintf fmt "%c" smb
+  | ImmBool boolean -> fprintf fmt (if boolean then "true" else "false")
+  | ImmUnit -> fprintf fmt "()"
+  | ImmWildcard -> fprintf fmt "_"
   | ImmId id -> fprintf fmt "i%d" id
-  | _ -> failwith "NotImplemented"
 ;;
 
-let pp_cexpr fmt = function
+let pp_cexpr fmt =
+  let pp_list pp fmt delimiter =
+    pp_print_list
+      ~pp_sep:(fun fmt _ -> fprintf fmt delimiter)
+      (fun fmt value -> pp fmt value)
+      fmt
+  in
+  function
   | CBinaryOperation (bop, left, right) ->
     fprintf
       fmt
@@ -19,13 +29,44 @@ let pp_cexpr fmt = function
       bop
       pp_immexpr
       right
+  | CUnaryOperation (unop, imm) ->
+    fprintf fmt "%a%a" Ast.pp_unary_operator unop pp_immexpr imm
+  | CApplication (fun_imm, arg_imm) ->
+    fprintf fmt "%a %a" pp_immexpr fun_imm pp_immexpr arg_imm
+  | CList imm_list -> fprintf fmt "[%a]" (fun fmt -> pp_list pp_immexpr fmt "; ") imm_list
+  | CTuple imm_list ->
+    fprintf fmt "(%a)" (fun fmt -> pp_list pp_immexpr fmt ", ") imm_list
+  | CIf (condition, true_branch, false_branch) ->
+    fprintf
+      fmt
+      "if %a then %a else %a"
+      pp_immexpr
+      condition
+      pp_immexpr
+      true_branch
+      pp_immexpr
+      false_branch
+  | CConstructList (head, tail) -> fprintf fmt "%a :: %a" pp_immexpr head pp_immexpr tail
+  | CFun (pattern_list, imm) ->
+    fprintf
+      fmt
+      "fun %a -> %a"
+      (fun fmt -> pp_list Pprintast.pp_pattern fmt " ")
+      pattern_list
+      pp_immexpr
+      imm
+  | CMatchWith (matched, case_list) ->
+    fprintf fmt "match %a with" pp_immexpr matched;
+    List.iter
+      (fun (case, action) ->
+        fprintf fmt " | %a -> %a" Pprintast.pp_pattern case pp_immexpr action)
+      case_list
   | CImm immexpr -> pp_immexpr fmt immexpr
-  | _ -> failwith "NotImplemented"
 ;;
 
 let rec pp_aexpr fmt = function
   | ALet (id, cexpr, aexpr) ->
-    fprintf fmt "let i%d = %a in\n%a\n" id pp_cexpr cexpr pp_aexpr aexpr
+    fprintf fmt "let i%d = %a in\n%a" id pp_cexpr cexpr pp_aexpr aexpr
   | ACExpr cexpr -> pp_cexpr fmt cexpr
 ;;
 

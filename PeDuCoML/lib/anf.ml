@@ -71,7 +71,7 @@ module AnfConvert : sig
 
   include Base.Monad.Infix with type 'a t := 'a t
 
-  val fresh : int t
+  val fresh : unique_id t
   val bind : 'a t -> ('a -> 'b t) -> 'b t
   val return : 'a -> 'a t
   val ( let* ) : 'a t -> ('a -> 'b t) -> 'b t
@@ -79,7 +79,7 @@ module AnfConvert : sig
 end = struct
   type 'a t = int -> 'a * int
 
-  let fresh last = last + 1, last
+  let fresh last = last, last + 1
 
   let ( >>= ) : 'a t -> ('a -> 'b t) -> 'b t =
    fun m f state ->
@@ -222,7 +222,11 @@ let declaration_anf env = function
   | DRecursiveDeclaration (name, pattern_list, expr) ->
     let* fresh_var = fresh in
     let env = Base.Map.set env ~key:name ~data:fresh_var in
-    expression_anf env (efun pattern_list expr) (fun imm -> return @@ acimm imm)
+    (match pattern_list with
+     | [] ->
+       expression_anf env expr (fun imm ->
+         return @@ alet fresh_var (cimm imm) (acimm (imm_id fresh_var)))
+     | _ -> expression_anf env (efun pattern_list expr) (fun imm -> return @@ acimm imm))
 ;;
 
 let convert (program : declaration list) =

@@ -4,7 +4,7 @@ open Format
 let pp_immexpr fmt = function
   | ImmInt num -> fprintf fmt "%d" num
   | ImmString str -> fprintf fmt "\"%s\"" str
-  | ImmChar smb -> fprintf fmt "%c" smb
+  | ImmChar smb -> fprintf fmt "'%c'" smb
   | ImmBool boolean -> fprintf fmt (if boolean then "true" else "false")
   | ImmUnit -> fprintf fmt "()"
   | ImmWildcard -> fprintf fmt "_"

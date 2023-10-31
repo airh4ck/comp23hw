@@ -17,7 +17,7 @@ type dispatch =
   ; parse_matching : dispatch -> expression Angstrom.t
   ; parse_let_in : dispatch -> expression Angstrom.t
   ; parse_expression : dispatch -> expression Angstrom.t
-  ; parse_wildcard : pattern Angstrom.t
+  ; parse_pwildcard : pattern Angstrom.t
   ; parse_ptuple : dispatch -> pattern Angstrom.t
   ; parse_plist : dispatch -> pattern Angstrom.t
   ; parse_pconstruct_list : dispatch -> pattern Angstrom.t
@@ -73,7 +73,7 @@ let parse_pattern d =
     ; d.parse_plist d
     ; d.parse_pliteral
     ; d.parse_pidentifier
-    ; d.parse_wildcard
+    ; d.parse_pwildcard
     ]
 ;;
 
@@ -122,13 +122,13 @@ let parse_pidentifier =
     if List.exists (( = ) entity) keywords
     then fail "Parsing error: keyword used."
     else if String.for_all (fun c -> c = '_') entity
-    then fail "Parsing error: this is a wildcard."
+    then fail "Parsing error: wildcard used."
     else return @@ pidentifier entity
   in
   parse_identifier
 ;;
 
-let parse_wildcard =
+let parse_pwildcard =
   fix
   @@ fun self ->
   parens self <|> remove_spaces *> (pwildcard <$> take_while1 (fun c -> c = '_'))
@@ -144,16 +144,17 @@ let parse_ptuple d =
     choice
       [ parens self
       ; d.parse_pconstruct_list d
-      ; d.parse_wildcard
+      ; d.parse_pwildcard
       ; d.parse_plist d
       ; d.parse_pliteral
       ; d.parse_pidentifier
       ]
   in
-  lift2
+  lift3
     ptuple
     (parse_pattern <* separator)
-    (sep_by1 separator parse_pattern <* remove_spaces))
+    (parse_pattern <* option "" separator)
+    (sep_by separator parse_pattern <* remove_spaces))
   <|> parens self
 ;;
 
@@ -178,7 +179,7 @@ let parse_pconstruct_list d =
        choice
          [ parens @@ d.parse_ptuple d
          ; parens self
-         ; d.parse_wildcard
+         ; d.parse_pwildcard
          ; d.parse_plist d
          ; d.parse_pliteral
          ; d.parse_pidentifier
@@ -225,10 +226,11 @@ let parse_tuple d =
            ; parse_identifier
            ]
        and separator = remove_spaces *> char ',' *> remove_spaces in
-       lift2
+       lift3
          etuple
          (parse_content <* separator)
-         (sep_by1 separator parse_content <* remove_spaces))
+         (parse_content <* option "" separator)
+         (sep_by separator parse_content <* remove_spaces))
      <|> parens self)
 ;;
 
@@ -282,9 +284,10 @@ let parse_fun d =
   in
   parens self
   <|> string "fun"
-      *> lift2
+      *> lift3
            efun
-           (many1 (parse_pattern d) <* remove_spaces <* string "->" <* remove_spaces)
+           (parse_pattern d <* remove_spaces)
+           (many (parse_pattern d) <* remove_spaces <* string "->" <* remove_spaces)
            (parse_content <* remove_spaces)
 ;;
 
@@ -353,12 +356,21 @@ let parse_let_in d =
        *> take_while1 space_predicate
        *> option "" (string "rec" <* take_while1 space_predicate)
       >>= fun parsed_rec ->
-      lift2
+      let separator = remove_spaces *> string "and" *> take_while1 space_predicate in
+      let first_declaration =
+        match parsed_rec with
+        | "rec" -> declaration_helper drecursivedeclaration d <* option "" separator
+        | _ -> declaration_helper ddeclaration d <* option "" separator
+      in
+      let other_declarations =
+        match parsed_rec with
+        | "rec" -> sep_by separator @@ declaration_helper drecursivedeclaration d
+        | _ -> sep_by separator @@ declaration_helper ddeclaration d
+      in
+      lift3
         eletin
-        (let separator = remove_spaces *> string "and" *> take_while1 space_predicate in
-         match parsed_rec with
-         | "rec" -> sep_by1 separator @@ declaration_helper drecursivedeclaration d
-         | _ -> sep_by1 separator @@ declaration_helper ddeclaration d)
+        first_declaration
+        other_declarations
         (remove_spaces *> string "in" *> parse_content))
 ;;
 
@@ -415,20 +427,24 @@ let parse_matching d =
   in
   parens self
   <|> string "match"
-      *> lift2
-           ematchwith
-           parse_content_right
-           (let parse_case =
-              lift2
-                (fun case action -> case, action)
-                (parse_pattern d)
-                (remove_spaces *> string "->" *> parse_content_right)
-            and separator = remove_spaces *> string "|" in
-            remove_spaces
-            *> string "with"
-            *> remove_spaces
-            *> (string "|" <|> remove_spaces)
-            *> sep_by1 separator parse_case)
+      *>
+      let parse_case =
+        lift2
+          (fun case action -> case, action)
+          (parse_pattern d)
+          (remove_spaces *> string "->" *> parse_content_right)
+      in
+      let separator = remove_spaces *> string "|" in
+      lift3
+        ematchwith
+        parse_content_right
+        (remove_spaces
+         *> string "with"
+         *> remove_spaces
+         *> (string "|" <|> remove_spaces)
+         *> parse_case
+        <* separator)
+        (sep_by separator parse_case)
 ;;
 
 let parse_binary_operation d =
@@ -616,7 +632,7 @@ let default =
   ; parse_matching
   ; parse_let_in
   ; parse_expression
-  ; parse_wildcard
+  ; parse_pwildcard
   ; parse_ptuple
   ; parse_plist
   ; parse_pconstruct_list
@@ -725,8 +741,8 @@ let%test _ =
            ( "main"
            , []
            , EConstructList
-               ( EFun ([ PIdentifier "x" ], ELiteral (LChar 'a'))
-               , EList [ EFun ([ PWildcard ], ELiteral (LChar 'b')) ] ) )
+               ( EFun (PIdentifier "x", [], ELiteral (LChar 'a'))
+               , EList [ EFun (PWildcard, [], ELiteral (LChar 'b')) ] ) )
        ]
 ;;
 
@@ -801,13 +817,13 @@ let%test _ =
            , []
            , EList
                [ ELetIn
-                   ( [ DDeclaration ("x", [], ELiteral (LInt 5))
-                     ; DDeclaration ("y", [], ELiteral (LInt 7))
-                     ]
+                   ( DDeclaration ("x", [], ELiteral (LInt 5))
+                   , [ DDeclaration ("y", [], ELiteral (LInt 7)) ]
                    , EBinaryOperation (Add, EIdentifier "x", EIdentifier "y") )
                ; EApplication
                    ( EFun
-                       ( [ PIdentifier "t" ]
+                       ( PIdentifier "t"
+                       , []
                        , EBinaryOperation (Sub, EIdentifier "t", ELiteral (LInt 1)) )
                    , ELiteral (LInt 10) )
                ; EIf
@@ -857,7 +873,8 @@ let%test _ =
            ( "main"
            , []
            , EFun
-               ( [ PIdentifier "x"; PIdentifier "y"; PIdentifier "z" ]
+               ( PIdentifier "x"
+               , [ PIdentifier "y"; PIdentifier "z" ]
                , EBinaryOperation
                    ( Add
                    , EIdentifier "x"
@@ -868,7 +885,7 @@ let%test _ =
 (* 14 *)
 let%test _ =
   parse " let main = fun _ -> 42 "
-  = Result.ok @@ [ DDeclaration ("main", [], EFun ([ PWildcard ], ELiteral (LInt 42))) ]
+  = Result.ok @@ [ DDeclaration ("main", [], EFun (PWildcard, [], ELiteral (LInt 42))) ]
 ;;
 
 (* 15 *)
@@ -878,7 +895,7 @@ let%test _ =
     @@ [ DDeclaration
            ( "main"
            , []
-           , EFun ([ PWildcard ], EFun ([ PWildcard ], ELiteral (LString "Hello"))) )
+           , EFun (PWildcard, [], EFun (PWildcard, [], ELiteral (LString "Hello"))) )
        ]
 ;;
 
@@ -890,7 +907,8 @@ let%test _ =
            ( "main"
            , []
            , EFun
-               ( [ PIdentifier "x"; PIdentifier "y" ]
+               ( PIdentifier "x"
+               , [ PIdentifier "y" ]
                , EIf
                    ( EBinaryOperation (LT, EIdentifier "x", ELiteral (LInt 0))
                    , EList [ EIdentifier "x"; EIdentifier "y" ]
@@ -915,33 +933,30 @@ let%test _ =
            ( "matrix_mult_number"
            , [ PIdentifier "matrix"; PIdentifier "number" ]
            , ELetIn
-               ( [ DRecursiveDeclaration
-                     ( "line_mult_number"
-                     , [ PIdentifier "line" ]
-                     , EMatchWith
-                         ( EIdentifier "line"
-                         , [ ( PConstructList (PIdentifier "head", PIdentifier "tail")
-                             , EConstructList
-                                 ( EBinaryOperation
-                                     (Mul, EIdentifier "head", EIdentifier "number")
-                                 , EApplication
-                                     (EIdentifier "line_mult_number", EIdentifier "tail")
-                                 ) )
-                           ; PWildcard, EList []
-                           ] ) )
-                 ]
+               ( DRecursiveDeclaration
+                   ( "line_mult_number"
+                   , [ PIdentifier "line" ]
+                   , EMatchWith
+                       ( EIdentifier "line"
+                       , ( PConstructList (PIdentifier "head", PIdentifier "tail")
+                         , EConstructList
+                             ( EBinaryOperation
+                                 (Mul, EIdentifier "head", EIdentifier "number")
+                             , EApplication
+                                 (EIdentifier "line_mult_number", EIdentifier "tail") ) )
+                       , [ PWildcard, EList [] ] ) )
+               , []
                , EMatchWith
                    ( EIdentifier "matrix"
-                   , [ ( PConstructList (PIdentifier "head", PIdentifier "tail")
-                       , EConstructList
-                           ( EApplication
-                               (EIdentifier "line_mult_number", EIdentifier "head")
-                           , EApplication
-                               ( EApplication
-                                   (EIdentifier "matrix_mult_number", EIdentifier "tail")
-                               , EIdentifier "number" ) ) )
-                     ; PWildcard, EList []
-                     ] ) ) )
+                   , ( PConstructList (PIdentifier "head", PIdentifier "tail")
+                     , EConstructList
+                         ( EApplication
+                             (EIdentifier "line_mult_number", EIdentifier "head")
+                         , EApplication
+                             ( EApplication
+                                 (EIdentifier "matrix_mult_number", EIdentifier "tail")
+                             , EIdentifier "number" ) ) )
+                   , [ PWildcard, EList [] ] ) ) )
        ]
 ;;
 
@@ -950,7 +965,7 @@ let%test _ =
   parse " let main = \"Danya\", \"Ilya\" "
   = Result.ok
     @@ [ DDeclaration
-           ("main", [], ETuple [ ELiteral (LString "Danya"); ELiteral (LString "Ilya") ])
+           ("main", [], ETuple (ELiteral (LString "Danya"), ELiteral (LString "Ilya"), []))
        ]
 ;;
 
@@ -962,12 +977,9 @@ let%test _ =
            ( "main"
            , []
            , ETuple
-               [ ELiteral (LInt 123)
-               ; ELiteral (LString "aaa")
-               ; ELiteral (LChar 'b')
-               ; ELiteral (LBool true)
-               ; ELiteral LUnit
-               ] )
+               ( ELiteral (LInt 123)
+               , ELiteral (LString "aaa")
+               , [ ELiteral (LChar 'b'); ELiteral (LBool true); ELiteral LUnit ] ) )
        ]
 ;;
 
@@ -979,9 +991,10 @@ let%test _ =
            ( "main"
            , []
            , EFun
-               ( [ PWildcard ]
-               , ETuple [ ELiteral (LInt 1); EFun ([ PWildcard ], ELiteral (LInt 2)) ] )
-           )
+               ( PWildcard
+               , []
+               , ETuple (ELiteral (LInt 1), EFun (PWildcard, [], ELiteral (LInt 2)), [])
+               ) )
        ]
 ;;
 
@@ -993,8 +1006,8 @@ let%test _ =
            ( "main"
            , []
            , EList
-               [ EFun ([ PWildcard ], ELiteral (LInt 1))
-               ; EFun ([ PWildcard ], ELiteral (LInt 2))
+               [ EFun (PWildcard, [], ELiteral (LInt 1))
+               ; EFun (PWildcard, [], ELiteral (LInt 2))
                ] )
        ]
 ;;
@@ -1010,12 +1023,12 @@ let%test _ =
                ( EApplication
                    ( EIdentifier "f"
                    , ETuple
-                       [ EApplication (EIdentifier "g", ELiteral (LInt 5))
-                       ; EApplication (EIdentifier "h", ELiteral LUnit)
-                       ] )
+                       ( EApplication (EIdentifier "g", ELiteral (LInt 5))
+                       , EApplication (EIdentifier "h", ELiteral LUnit)
+                       , [] ) )
                , ELetIn
-                   ( [ DDeclaration ("x", [], ELiteral (LInt 17))
-                     ; DDeclaration ("y", [], ELiteral (LInt 6))
+                   ( DDeclaration ("x", [], ELiteral (LInt 17))
+                   , [ DDeclaration ("y", [], ELiteral (LInt 6))
                      ; DDeclaration ("z", [], ELiteral (LInt 3))
                      ]
                    , EBinaryOperation
@@ -1047,14 +1060,14 @@ let%test _ =
                            , EBinaryOperation (Mul, EIdentifier "x", EIdentifier "y")
                            , ELiteral (LInt 0) ) )
                    , ELetIn
-                       ( [ DDeclaration
-                             ( "f"
-                             , [ PIdentifier "t" ]
-                             , EBinaryOperation
-                                 ( Mul
-                                 , EBinaryOperation (Mul, EIdentifier "t", EIdentifier "t")
-                                 , EIdentifier "t" ) )
-                         ]
+                       ( DDeclaration
+                           ( "f"
+                           , [ PIdentifier "t" ]
+                           , EBinaryOperation
+                               ( Mul
+                               , EBinaryOperation (Mul, EIdentifier "t", EIdentifier "t")
+                               , EIdentifier "t" ) )
+                       , []
                        , EBinaryOperation
                            ( Mul
                            , EApplication (EIdentifier "f", EIdentifier "x")
@@ -1093,7 +1106,8 @@ let%test _ =
                        ( GTE
                        , EApplication
                            ( EFun
-                               ( [ PIdentifier "x" ]
+                               ( PIdentifier "x"
+                               , []
                                , EBinaryOperation (Mul, EIdentifier "x", EIdentifier "x")
                                )
                            , EIdentifier "r" )
@@ -1124,7 +1138,7 @@ let%test _ =
        ]
 ;;
 
-(* 31 *)
+(* 26 *)
 let%test _ =
   parse
     " let phi n = let rec helper last1 last2 n = if n > 0 then helper last2 (last1 + \
@@ -1135,20 +1149,19 @@ let%test _ =
            ( "phi"
            , [ PIdentifier "n" ]
            , ELetIn
-               ( [ DRecursiveDeclaration
-                     ( "helper"
-                     , [ PIdentifier "last1"; PIdentifier "last2"; PIdentifier "n" ]
-                     , EIf
-                         ( EBinaryOperation (GT, EIdentifier "n", ELiteral (LInt 0))
-                         , EApplication
-                             ( EApplication
-                                 ( EApplication (EIdentifier "helper", EIdentifier "last2")
-                                 , EBinaryOperation
-                                     (Add, EIdentifier "last1", EIdentifier "last2") )
-                             , EBinaryOperation (Sub, EIdentifier "n", ELiteral (LInt 1))
-                             )
-                         , EIdentifier "last2" ) )
-                 ]
+               ( DRecursiveDeclaration
+                   ( "helper"
+                   , [ PIdentifier "last1"; PIdentifier "last2"; PIdentifier "n" ]
+                   , EIf
+                       ( EBinaryOperation (GT, EIdentifier "n", ELiteral (LInt 0))
+                       , EApplication
+                           ( EApplication
+                               ( EApplication (EIdentifier "helper", EIdentifier "last2")
+                               , EBinaryOperation
+                                   (Add, EIdentifier "last1", EIdentifier "last2") )
+                           , EBinaryOperation (Sub, EIdentifier "n", ELiteral (LInt 1)) )
+                       , EIdentifier "last2" ) )
+               , []
                , EApplication
                    ( EApplication
                        ( EApplication (EIdentifier "helper", ELiteral (LInt 1))
@@ -1157,7 +1170,7 @@ let%test _ =
        ]
 ;;
 
-(* 32 *)
+(* 27 *)
 let%test _ =
   parse " let main = let sq x = x * x in sq x + sq y + sq z "
   = Result.ok
@@ -1165,11 +1178,11 @@ let%test _ =
            ( "main"
            , []
            , ELetIn
-               ( [ DDeclaration
-                     ( "sq"
-                     , [ PIdentifier "x" ]
-                     , EBinaryOperation (Mul, EIdentifier "x", EIdentifier "x") )
-                 ]
+               ( DDeclaration
+                   ( "sq"
+                   , [ PIdentifier "x" ]
+                   , EBinaryOperation (Mul, EIdentifier "x", EIdentifier "x") )
+               , []
                , EBinaryOperation
                    ( Add
                    , EBinaryOperation
@@ -1180,7 +1193,7 @@ let%test _ =
        ]
 ;;
 
-(* 33 *)
+(* 28 *)
 let%test _ =
   parse " let mult x y z = x * y * z \n  let main = mult 5 6 7 "
   = Result.ok
@@ -1202,7 +1215,7 @@ let%test _ =
        ]
 ;;
 
-(* 35 *)
+(* 29 *)
 let%test _ =
   parse
     " let f x y z = match x, y, z with\n\
@@ -1215,87 +1228,92 @@ let%test _ =
            ( "f"
            , [ PIdentifier "x"; PIdentifier "y"; PIdentifier "z" ]
            , EMatchWith
-               ( ETuple [ EIdentifier "x"; EIdentifier "y"; EIdentifier "z" ]
+               ( ETuple (EIdentifier "x", EIdentifier "y", [ EIdentifier "z" ])
+               , ( PTuple
+                     ( PLiteral (LBool true)
+                     , PLiteral (LBool true)
+                     , [ PLiteral (LBool false) ] )
+                 , ELiteral (LBool true) )
                , [ ( PTuple
-                       [ PLiteral (LBool true)
-                       ; PLiteral (LBool true)
-                       ; PLiteral (LBool false)
-                       ]
+                       ( PLiteral (LBool true)
+                       , PLiteral (LBool false)
+                       , [ PLiteral (LBool true) ] )
                    , ELiteral (LBool true) )
                  ; ( PTuple
-                       [ PLiteral (LBool true)
-                       ; PLiteral (LBool false)
-                       ; PLiteral (LBool true)
-                       ]
-                   , ELiteral (LBool true) )
-                 ; ( PTuple
-                       [ PLiteral (LBool false)
-                       ; PLiteral (LBool true)
-                       ; PLiteral (LBool true)
-                       ]
+                       ( PLiteral (LBool false)
+                       , PLiteral (LBool true)
+                       , [ PLiteral (LBool true) ] )
                    , ELiteral (LBool true) )
                  ; PWildcard, ELiteral (LBool false)
                  ] ) )
        ]
 ;;
 
+(* 30 *)
 let%test _ =
   parse "let f 2 = 1"
   = Result.ok @@ [ DDeclaration ("f", [ PLiteral (LInt 2) ], ELiteral (LInt 1)) ]
 ;;
 
+(* 31 *)
 let%test _ =
   parse "let f _ = 1"
   = Result.ok @@ [ DDeclaration ("f", [ PWildcard ], ELiteral (LInt 1)) ]
 ;;
 
+(* 32 *)
 let%test _ =
   parse "let f (x, \"abacaba\") = 1"
   = Result.ok
     @@ [ DDeclaration
            ( "f"
-           , [ PTuple [ PIdentifier "x"; PLiteral (LString "abacaba") ] ]
+           , [ PTuple (PIdentifier "x", PLiteral (LString "abacaba"), []) ]
            , ELiteral (LInt 1) )
        ]
 ;;
 
+(* 33 *)
 let%test _ =
   parse "let f [(x, y); ((), _)] = 1"
   = Result.ok
     @@ [ DDeclaration
            ( "f"
            , [ PList
-                 [ PTuple [ PIdentifier "x"; PIdentifier "y" ]
-                 ; PTuple [ PLiteral LUnit; PWildcard ]
+                 [ PTuple (PIdentifier "x", PIdentifier "y", [])
+                 ; PTuple (PLiteral LUnit, PWildcard, [])
                  ]
              ]
            , ELiteral (LInt 1) )
        ]
 ;;
 
+(* 34 *)
 let%test _ =
   parse "let f ((true, '\n') :: [x, y]) = 1"
   = Result.ok
     @@ [ DDeclaration
            ( "f"
            , [ PConstructList
-                 ( PTuple [ PLiteral (LBool true); PLiteral (LChar '\n') ]
-                 , PList [ PTuple [ PIdentifier "x"; PIdentifier "y" ] ] )
+                 ( PTuple (PLiteral (LBool true), PLiteral (LChar '\n'), [])
+                 , PList [ PTuple (PIdentifier "x", PIdentifier "y", []) ] )
              ]
            , ELiteral (LInt 1) )
        ]
 ;;
 
+(* 35 *)
 let%test _ =
   parse "let f = fun x -> x"
-  = Result.ok @@ [ DDeclaration ("f", [], EFun ([ PIdentifier "x" ], EIdentifier "x")) ]
+  = Result.ok @@ [ DDeclaration ("f", [], EFun (PIdentifier "x", [], EIdentifier "x")) ]
 ;;
 
+(* 36 *)
 let%test _ =
   parse "let f = fun _ -> 2"
-  = Result.ok @@ [ DDeclaration ("f", [], EFun ([ PWildcard ], ELiteral (LInt 2))) ]
+  = Result.ok @@ [ DDeclaration ("f", [], EFun (PWildcard, [], ELiteral (LInt 2))) ]
 ;;
 
+(* 37 *)
 let%test _ =
   parse "let f = fun x, (true, \"42\") -> true"
   = Result.ok
@@ -1303,15 +1321,16 @@ let%test _ =
            ( "f"
            , []
            , EFun
-               ( [ PTuple
-                     [ PIdentifier "x"
-                     ; PTuple [ PLiteral (LBool true); PLiteral (LString "42") ]
-                     ]
-                 ]
+               ( PTuple
+                   ( PIdentifier "x"
+                   , PTuple (PLiteral (LBool true), PLiteral (LString "42"), [])
+                   , [] )
+               , []
                , ELiteral (LBool true) ) )
        ]
 ;;
 
+(* 38 *)
 let%test _ =
   parse "let f = fun [1, x, true; _, _, y] -> true"
   = Result.ok
@@ -1319,16 +1338,16 @@ let%test _ =
            ( "f"
            , []
            , EFun
-               ( [ PList
-                     [ PTuple
-                         [ PLiteral (LInt 1); PIdentifier "x"; PLiteral (LBool true) ]
-                     ; PTuple [ PWildcard; PWildcard; PIdentifier "y" ]
-                     ]
-                 ]
+               ( PList
+                   [ PTuple (PLiteral (LInt 1), PIdentifier "x", [ PLiteral (LBool true) ])
+                   ; PTuple (PWildcard, PWildcard, [ PIdentifier "y" ])
+                   ]
+               , []
                , ELiteral (LBool true) ) )
        ]
 ;;
 
+(* 39 *)
 let%test _ =
   parse "let f = fun ([x] :: [y; [(), ([], [])]]) -> true"
   = Result.ok
@@ -1336,18 +1355,20 @@ let%test _ =
            ( "f"
            , []
            , EFun
-               ( [ PConstructList
-                     ( PList [ PIdentifier "x" ]
-                     , PList
-                         [ PIdentifier "y"
-                         ; PList
-                             [ PTuple [ PLiteral LUnit; PTuple [ PList []; PList [] ] ] ]
-                         ] )
-                 ]
+               ( PConstructList
+                   ( PList [ PIdentifier "x" ]
+                   , PList
+                       [ PIdentifier "y"
+                       ; PList
+                           [ PTuple (PLiteral LUnit, PTuple (PList [], PList [], []), [])
+                           ]
+                       ] )
+               , []
                , ELiteral (LBool true) ) )
        ]
 ;;
 
+(* 40 *)
 let%test _ =
   parse " let f x y z = match x, y, z with\n  | true, _, x -> true\n  | _ -> false"
   = Result.ok
@@ -1355,14 +1376,14 @@ let%test _ =
            ( "f"
            , [ PIdentifier "x"; PIdentifier "y"; PIdentifier "z" ]
            , EMatchWith
-               ( ETuple [ EIdentifier "x"; EIdentifier "y"; EIdentifier "z" ]
-               , [ ( PTuple [ PLiteral (LBool true); PWildcard; PIdentifier "x" ]
-                   , ELiteral (LBool true) )
-                 ; PWildcard, ELiteral (LBool false)
-                 ] ) )
+               ( ETuple (EIdentifier "x", EIdentifier "y", [ EIdentifier "z" ])
+               , ( PTuple (PLiteral (LBool true), PWildcard, [ PIdentifier "x" ])
+                 , ELiteral (LBool true) )
+               , [ PWildcard, ELiteral (LBool false) ] ) )
        ]
 ;;
 
+(* 41 *)
 let%test _ =
   parse
     " let f x y z = match x, y, z with\n\
@@ -1373,19 +1394,18 @@ let%test _ =
            ( "f"
            , [ PIdentifier "x"; PIdentifier "y"; PIdentifier "z" ]
            , EMatchWith
-               ( ETuple [ EIdentifier "x"; EIdentifier "y"; EIdentifier "z" ]
-               , [ ( PTuple
-                       [ PList [ PIdentifier "a"; PIdentifier "b" ]
-                       ; PConstructList
-                           (PIdentifier "c", PList [ PIdentifier "d"; PIdentifier "e" ])
-                       ; PWildcard
-                       ]
-                   , ELiteral (LBool true) )
-                 ; PWildcard, ELiteral (LBool false)
-                 ] ) )
+               ( ETuple (EIdentifier "x", EIdentifier "y", [ EIdentifier "z" ])
+               , ( PTuple
+                     ( PList [ PIdentifier "a"; PIdentifier "b" ]
+                     , PConstructList
+                         (PIdentifier "c", PList [ PIdentifier "d"; PIdentifier "e" ])
+                     , [ PWildcard ] )
+                 , ELiteral (LBool true) )
+               , [ PWildcard, ELiteral (LBool false) ] ) )
        ]
 ;;
 
+(* 42 *)
 let%test _ =
   parse
     " let f x y z = match x, y, z with\n\
@@ -1396,26 +1416,25 @@ let%test _ =
            ( "f"
            , [ PIdentifier "x"; PIdentifier "y"; PIdentifier "z" ]
            , EMatchWith
-               ( ETuple [ EIdentifier "x"; EIdentifier "y"; EIdentifier "z" ]
-               , [ ( PTuple
-                       [ PLiteral LUnit
-                       ; PList
-                           [ PTuple [ PIdentifier "a"; PLiteral (LInt 1) ]
-                           ; PTuple [ PLiteral LUnit; PWildcard ]
-                           ]
-                       ; PTuple
-                           [ PIdentifier "c"
-                           ; PConstructList
+               ( ETuple (EIdentifier "x", EIdentifier "y", [ EIdentifier "z" ])
+               , ( PTuple
+                     ( PLiteral LUnit
+                     , PList
+                         [ PTuple (PIdentifier "a", PLiteral (LInt 1), [])
+                         ; PTuple (PLiteral LUnit, PWildcard, [])
+                         ]
+                     , [ PTuple
+                           ( PIdentifier "c"
+                           , PConstructList
                                (PList [ PIdentifier "d"; PWildcard ], PWildcard)
-                           ; PList []
-                           ]
-                       ]
-                   , ELiteral (LBool true) )
-                 ; PWildcard, ELiteral (LBool false)
-                 ] ) )
+                           , [ PList [] ] )
+                       ] )
+                 , ELiteral (LBool true) )
+               , [ PWildcard, ELiteral (LBool false) ] ) )
        ]
 ;;
 
+(* 43 *)
 let%test _ =
   parse "let f ___ = fun [1, x, true; _, _, y] -> true"
   = Result.ok
@@ -1423,16 +1442,16 @@ let%test _ =
            ( "f"
            , [ PWildcard ]
            , EFun
-               ( [ PList
-                     [ PTuple
-                         [ PLiteral (LInt 1); PIdentifier "x"; PLiteral (LBool true) ]
-                     ; PTuple [ PWildcard; PWildcard; PIdentifier "y" ]
-                     ]
-                 ]
+               ( PList
+                   [ PTuple (PLiteral (LInt 1), PIdentifier "x", [ PLiteral (LBool true) ])
+                   ; PTuple (PWildcard, PWildcard, [ PIdentifier "y" ])
+                   ]
+               , []
                , ELiteral (LBool true) ) )
        ]
 ;;
 
+(* 44 *)
 let%test _ =
   parse "let f (__) = fun [1, x, true; _, _, y] -> true"
   = Result.ok
@@ -1440,16 +1459,16 @@ let%test _ =
            ( "f"
            , [ PWildcard ]
            , EFun
-               ( [ PList
-                     [ PTuple
-                         [ PLiteral (LInt 1); PIdentifier "x"; PLiteral (LBool true) ]
-                     ; PTuple [ PWildcard; PWildcard; PIdentifier "y" ]
-                     ]
-                 ]
+               ( PList
+                   [ PTuple (PLiteral (LInt 1), PIdentifier "x", [ PLiteral (LBool true) ])
+                   ; PTuple (PWildcard, PWildcard, [ PIdentifier "y" ])
+                   ]
+               , []
                , ELiteral (LBool true) ) )
        ]
 ;;
 
+(* 45 *)
 let%test _ =
   parse "let f _x = fun [1, x, true; _, _, y] -> true"
   = Result.ok
@@ -1457,12 +1476,11 @@ let%test _ =
            ( "f"
            , [ PIdentifier "_x" ]
            , EFun
-               ( [ PList
-                     [ PTuple
-                         [ PLiteral (LInt 1); PIdentifier "x"; PLiteral (LBool true) ]
-                     ; PTuple [ PWildcard; PWildcard; PIdentifier "y" ]
-                     ]
-                 ]
+               ( PList
+                   [ PTuple (PLiteral (LInt 1), PIdentifier "x", [ PLiteral (LBool true) ])
+                   ; PTuple (PWildcard, PWildcard, [ PIdentifier "y" ])
+                   ]
+               , []
                , ELiteral (LBool true) ) )
        ]
 ;;

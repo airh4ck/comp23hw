@@ -9,12 +9,14 @@ let rec find_identifiers = function
   | EApplication (left_operand, right_operand) ->
     find_identifiers left_operand @ find_identifiers right_operand
   | EIdentifier id -> [ id ]
-  | EFun _ -> []
-  | EList expression_list | ETuple expression_list ->
+  | EList expression_list ->
     List.fold_right
       ~f:(fun expression acc -> find_identifiers expression @ acc)
       ~init:[]
       expression_list
+  | ETuple (first_elem, second_elem, other_elems) ->
+    List.fold_right ~f:(fun expression acc -> find_identifiers expression @ acc) ~init:[]
+    @@ (first_elem :: second_elem :: other_elems)
   | EConstructList (operand, list) -> find_identifiers operand @ find_identifiers list
   | _ -> []
 ;;
@@ -22,10 +24,12 @@ let rec find_identifiers = function
 let find_identifiers_pattern =
   let rec helper arr = function
     | PIdentifier id -> id :: arr
-    | PList pattern_list | PTuple pattern_list ->
+    | PList pattern_list ->
       (match pattern_list with
        | head :: tail -> helper (helper [] head @ arr) (PList tail)
        | _ -> [])
+    | PTuple (first_pattern, second_pattern, other_patterns) ->
+      helper arr @@ plist (first_pattern :: second_pattern :: other_patterns)
     | PConstructList (operand, list) -> helper (helper [] operand) list
     | _ -> []
   in

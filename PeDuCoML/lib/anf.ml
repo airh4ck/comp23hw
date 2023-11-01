@@ -242,21 +242,27 @@ let process_declaration env declaration =
     return @@ (name, fresh_var, get_function env pattern_list expr)
 ;;
 
-(* convert and run_convert -- TODO (on Danya) *)
-(* let convert (program : declaration list) =
-  let rec helper env = function
+let anf_conversion (program : declaration list)
+  : (string, global_scope_function, Base.String.comparator_witness) Base.Map.t
+  AnfConvert.t
+  =
+  let rec helper env current_map = function
     | head :: tail ->
-      let* head_declaration = declaration_anf env head in
-      let name =
-        match head with
-        | DDeclaration (name, _, _) | DRecursiveDeclaration (name, _, _) -> name
-      in
-      let* fresh_var = fresh in
-      let* tail_declarations = helper (Base.Map.set env ~key:name ~data:fresh_var) tail in
-      return @@ (head_declaration :: tail_declarations)
-    | _ -> return []
+      let* name, fresh_var, anf_function = process_declaration env head in
+      let* anf_function = anf_function in
+      let env = Base.Map.update env name ~f:(fun _ -> fresh_var) in
+      let current_map = Base.Map.update current_map name ~f:(fun _ -> anf_function) in
+      helper env current_map tail
+    | _ -> return @@ current_map
   in
-  helper (Base.Map.empty (module Base.String)) program
+  helper
+    (Base.Map.empty (module Base.String))
+    (Base.Map.empty (module Base.String))
+    program
 ;;
 
-let run_convert program = run @@ convert program *)
+let run_anf_conversion program
+  : (string, global_scope_function, Base.String.comparator_witness) Base.Map.t
+  =
+  run @@ anf_conversion program
+;;

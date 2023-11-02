@@ -435,16 +435,16 @@ let parse_matching d =
           (remove_spaces *> string "->" *> parse_content_right)
       in
       let separator = remove_spaces *> string "|" in
-      lift3
-        ematchwith
+      lift2
+        (fun matched -> function
+          | head :: tail -> ematchwith matched head tail
+          | _ -> failwith "LOL")
         parse_content_right
         (remove_spaces
-         *> string "with"
-         *> remove_spaces
-         *> (string "|" <|> remove_spaces)
-         *> parse_case
-        <* separator)
-        (sep_by separator parse_case)
+        *> string "with"
+        *> remove_spaces
+        *> (string "|" <|> remove_spaces)
+        *> sep_by1 separator parse_case)
 ;;
 
 let parse_binary_operation d =

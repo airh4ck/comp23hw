@@ -13,3 +13,11 @@
 
 (cram
  (deps ./inferencer_test.exe))
+
+(executable
+ (name closure_test)
+ (modules closure_test)
+ (libraries PeDuCoML.Lib stdio))
+
+(cram
+ (deps ./closure_test.exe))

@@ -54,26 +54,26 @@
   >     | _ -> ()
   > EOF
   No such variable: f
-  $ ./inferencer_test.exe <<- EOF
-  > let rec f arg = match arg with
-  >   | [] -> ()
-  >   | [x] -> 
-  >     (match x with
-  >     | (x, y) -> ())
-  >   | x :: y -> 
-  >     match x, (f y) with 
-  >     | (_, 'c') -> ()
-  > EOF
-  Unification failed: (f y) returns unit, but is matched with char
-  $ ./inferencer_test.exe <<- EOF
-  > let rec f arg = match arg with
-  >   | [] -> ()
-  >   | x :: y -> 
-  >     match (f y) with
-  >     | 'c' -> ()
-  >     | _ -> ()
-  > EOF
-  Unification failed: (f y) returns unit, but is matched with char
+$ ./inferencer_test.exe <<- EOF
+> let rec f arg = match arg with
+>   | [] -> ()
+>   | [x] -> 
+>     (match x with
+>     | (x, y) -> ())
+>   | x :: y -> 
+>     match x, (f y) with 
+>     | (_, 'c') -> ()
+> EOF
+Unification failed: (f y) returns unit, but is matched with char
+$ ./inferencer_test.exe <<- EOF
+> let rec f arg = match arg with
+>   | [] -> ()
+>   | x :: y -> 
+>     match (f y) with
+>     | 'c' -> ()
+>     | _ -> ()
+> EOF
+Unification failed: (f y) returns unit, but is matched with char
   $ ./inferencer_test.exe <<- EOF
   > let main = 
   >   let rec even n =

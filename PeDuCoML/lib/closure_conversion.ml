@@ -71,9 +71,9 @@ let closure_conversion =
       (match Base.Map.find env id with
        | None -> original
        | Some free_vars ->
-         Base.Set.fold
+         Base.Set.fold_right
            free_vars
-           ~f:(fun acc var -> eapplication acc (eidentifier var))
+           ~f:(fun var acc -> eapplication acc (eidentifier var))
            ~init:original)
     | EBinaryOperation (bop, left, right) ->
       let left = closure_expression env left in

@@ -88,6 +88,8 @@ let rec pp_expression fmt =
          | ELiteral _, EIdentifier _
          | EIdentifier _, ELiteral _
          | EIdentifier _, EIdentifier _ -> "%a %a %a"
+         | (ELiteral _ | EIdentifier _), _ -> "%a %a (%a)"
+         | _, (ELiteral _ | EIdentifier _) -> "(%a) %a %a"
          | _ -> "(%a) %a (%a)")
     in
     fprintf
@@ -151,7 +153,7 @@ let rec pp_expression fmt =
      | head :: tail ->
        fprintf fmt "%a" pp_declaration head;
        List.iter tail ~f:(fun declaration -> pp_declaration fmt declaration);
-       fprintf fmt "in %a" pp_expression body)
+       fprintf fmt " in %a" pp_expression body)
   | EMatchWith (matched_expression, first_case, other_cases) ->
     fprintf fmt "match %a with" pp_expression matched_expression;
     List.iter (first_case :: other_cases) ~f:(fun (case, action) ->

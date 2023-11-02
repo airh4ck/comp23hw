@@ -337,18 +337,20 @@ let infer =
       (match arguments with
        | [] -> helper env body
        | head :: tail ->
-         let* type_variable = fresh_var in
          let* env =
-           match head with
-           | PIdentifier id ->
-             return
-             @@ TypeEnv.extend env id (Base.Set.empty (module Base.Int), type_variable)
-           | _ -> return env
+           Base.List.fold_right
+             (Util.find_identifiers_pattern head)
+             ~f:(fun id acc ->
+               let* type_variable = fresh_var in
+               let* acc = acc in
+               return
+               @@ TypeEnv.extend acc id (Base.Set.empty (module Base.Int), type_variable))
+             ~init:(return env)
          in
-         let* head_subst, _ = pattern_helper env head in
+         let* head_subst, head_typ = pattern_helper env head in
          let env' = TypeEnv.apply head_subst env in
          let* subst, typ = helper env' (EFun (tail, body)) in
-         let result_type = tarrow (Subst.apply subst type_variable) typ in
+         let result_type = tarrow (Subst.apply subst head_typ) typ in
          let* result_subst = Subst.compose head_subst subst in
          return (result_subst, result_type))
     | EUnaryOperation (unary_operator, expression) ->
@@ -497,7 +499,8 @@ let check_types (program : declaration list) =
        | DDeclaration (name, _, _) ->
          let* _, function_type = infer environment head in
          let generalized_type = generalize environment function_type in
-         helper (TypeEnv.extend environment name generalized_type) tail
+         let* tail = helper (TypeEnv.extend environment name generalized_type) tail in
+         return @@ ((name, generalized_type) :: tail)
        | DRecursiveDeclaration (name, _, _) ->
          let* type_variable = fresh_var in
          let env =
@@ -511,8 +514,9 @@ let check_types (program : declaration list) =
          let* final_subst = Subst.compose subst' subst in
          let env = TypeEnv.apply final_subst env in
          let generalized_type = generalize env (Subst.apply final_subst type_variable) in
-         helper (TypeEnv.extend environment name generalized_type) tail)
-    | _ -> return ()
+         let* tail = helper (TypeEnv.extend environment name generalized_type) tail in
+         return @@ ((name, generalized_type) :: tail))
+    | _ -> return []
   in
   helper TypeEnv.empty program
 ;;

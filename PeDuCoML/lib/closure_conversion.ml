@@ -1,14 +1,6 @@
 open Util
 open Ast
 
-(* module ClosureEnv = struct
-  type t =
-    ( id
-    , (id, Base.String.comparator_witness) Base.Set.t
-    , Base.String.comparator_witness )
-    Base.Map.t
-end *)
-
 let closure_conversion =
   let rec closure_declaration env =
     let get_constructor = function

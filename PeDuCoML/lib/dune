@@ -8,7 +8,8 @@
   Util
   Anf
   Pprintanf
-  Closure_conversion)
+  Closure_conversion
+  Lambda_lift)
  (libraries angstrom)
  (preprocess
   (pps ppx_expect ppx_deriving.show ppx_deriving.eq))

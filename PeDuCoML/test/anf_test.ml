@@ -10,8 +10,10 @@ let print_anf code =
   | Ok ast ->
     (match R.run (check_types ast) with
      | Ok _ ->
-       let anf = run_convert ast in
-       List.iter (fun anf_node -> Format.printf "%a\n;;\n" pp_aexpr anf_node) anf
+       let anf = run_anf_conversion ast in
+       Base.Map.iter
+         ~f:(fun func -> Format.printf "%a\n" pp_global_scope_function func)
+         anf
      | Error err -> print_type_error err)
   | Error err -> Format.printf "%s\n" err
 ;;

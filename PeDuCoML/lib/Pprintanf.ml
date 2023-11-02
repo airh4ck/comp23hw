@@ -7,11 +7,11 @@ let pp_immexpr fmt = function
   | ImmChar smb -> fprintf fmt "'%c'" smb
   | ImmBool boolean -> fprintf fmt (if boolean then "true" else "false")
   | ImmUnit -> fprintf fmt "()"
-  | ImmWildcard -> fprintf fmt "_"
+  (* | ImmWildcard -> fprintf fmt "_" *)
   | ImmId id -> fprintf fmt "i%d" id
 ;;
 
-let pp_cexpr fmt =
+let rec pp_cexpr fmt =
   let pp_list pp fmt delimiter =
     pp_print_list
       ~pp_sep:(fun fmt _ -> fprintf fmt delimiter)
@@ -47,27 +47,29 @@ let pp_cexpr fmt =
       pp_immexpr
       false_branch
   | CConstructList (head, tail) -> fprintf fmt "%a :: %a" pp_immexpr head pp_immexpr tail
-  | CFun (pattern_list, imm) ->
-    fprintf
-      fmt
-      "fun %a -> %a"
-      (fun fmt -> pp_list Pprintast.pp_pattern fmt " ")
-      pattern_list
-      pp_immexpr
-      imm
   | CMatchWith (matched, case_list) ->
     fprintf fmt "match %a with" pp_immexpr matched;
     List.iter
       (fun (case, action) ->
-        fprintf fmt " | %a -> %a" Pprintast.pp_pattern case pp_immexpr action)
+        fprintf fmt " | %a -> %a" Pprintast.pp_pattern case pp_aexpr action)
       case_list
   | CImm immexpr -> pp_immexpr fmt immexpr
-;;
 
-let rec pp_aexpr fmt = function
+and pp_aexpr fmt = function
   | ALet (id, cexpr, aexpr) ->
     fprintf fmt "let i%d = %a in\n%a" id pp_cexpr cexpr pp_aexpr aexpr
   | ACExpr cexpr -> pp_cexpr fmt cexpr
+;;
+
+let pp_global_scope_function =
+  let id = ref 0 in
+  let rec helper fmt = function
+    | FunctionNoArgs aexpr -> Format.fprintf fmt "%a\n" pp_aexpr aexpr
+    | FunctionWithArgs func ->
+      Format.fprintf fmt "%a\n" helper (func (imm_id !id));
+      id := !id + 1
+  in
+  helper
 ;;
 
 let%expect_test _ =

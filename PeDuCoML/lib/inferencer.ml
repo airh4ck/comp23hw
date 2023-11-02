@@ -339,9 +339,9 @@ let infer =
     | EIdentifier identifier -> lookup_env identifier env
     | EFun (first_arg, other_args, body) ->
       let* env =
-        Base.List.fold_right
+        Base.Set.fold
           (Util.find_identifiers_pattern first_arg)
-          ~f:(fun id acc ->
+          ~f:(fun acc id ->
             let* type_variable = fresh_var in
             let* acc = acc in
             return
@@ -480,7 +480,7 @@ let infer =
       let head = Base.List.hd_exn case_list in
       let bootstrap_pattern env case =
         let identifiers = Util.find_identifiers_pattern case in
-        Base.List.fold_right identifiers ~init:(return env) ~f:(fun id acc ->
+        Base.Set.fold_right identifiers ~init:(return env) ~f:(fun id acc ->
           let* fresh_var = fresh_var in
           let* acc = acc in
           return @@ TypeEnv.extend acc id (Base.Set.empty (module Base.Int), fresh_var))

@@ -189,7 +189,7 @@ let rec anf (env : (string, 'a, Base.String.comparator_witness) Base.Map.t) expr
     let* body = k @@ imm_id fresh_var in
     let update_map env patt =
       let identifiers = Util.find_identifiers_pattern patt in
-      Base.List.fold_right identifiers ~init:(return env) ~f:(fun id acc ->
+      Base.Set.fold_right identifiers ~init:(return env) ~f:(fun id acc ->
         let* fresh_var = fresh in
         let* acc = acc in
         return @@ Base.Map.update acc id ~f:(fun _ -> fresh_var))
@@ -211,14 +211,14 @@ let rec anf (env : (string, 'a, Base.String.comparator_witness) Base.Map.t) expr
 
 let process_declaration env declaration =
   let find_all_pattern_ids pattern_list =
-    let rec helper current_list = function
-      | head :: tail -> helper (current_list @ find_identifiers_pattern head) tail
-      | _ -> current_list
+    let rec helper acc = function
+      | head :: tail -> helper (Base.Set.union acc (find_identifiers_pattern head)) tail
+      | _ -> acc
     in
-    helper [] pattern_list
+    helper empty pattern_list
   in
   let update_map env all_pattern_ids =
-    Base.List.fold_right all_pattern_ids ~init:(return env) ~f:(fun id acc ->
+    Base.Set.fold_right all_pattern_ids ~init:(return env) ~f:(fun id acc ->
       let* fresh_var = fresh in
       let* acc = acc in
       return @@ Base.Map.update acc id ~f:(fun _ -> fresh_var))
@@ -244,8 +244,7 @@ let process_declaration env declaration =
 ;;
 
 let anf_conversion (program : declaration list)
-  : (string, global_scope_function, Base.String.comparator_witness) Base.Map.t
-  State.t
+  : (string, global_scope_function, Base.String.comparator_witness) Base.Map.t State.t
   =
   let rec helper env current_map = function
     | head :: tail ->

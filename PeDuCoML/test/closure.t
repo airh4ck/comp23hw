@@ -55,3 +55,9 @@ let f ini = let g ini acc = ini :: acc in let h head :: tail = tail in h (h ((g 
   >   gen 0 :: [gen 1; gen 2; gen 3]
   > EOF
   let gen seed1 seed2 = let gen seed2 seed1 n = (n * seed2) + (seed1 * 42) in (((gen seed2) seed1) 0) :: ([((gen seed2) seed1) 1; ((gen seed2) seed1) 2; ((gen seed2) seed1) 3])
+  $ ./closure_test.exe <<- EOF
+  > let main x = 
+  >   let const f = fun s -> f in
+  >   let rev_const f s = const s in
+  >   rev_const (fun _ -> x)
+  > EOF

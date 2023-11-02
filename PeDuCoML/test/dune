@@ -1,6 +1,15 @@
 (executable
  (name anf_test)
+ (modules anf_test)
  (libraries PeDuCoML.Lib stdio))
 
 (cram
  (deps ./anf_test.exe))
+
+(executable
+ (name inferencer_test)
+ (modules inferencer_test)
+ (libraries PeDuCoML.Lib stdio))
+
+(cram
+ (deps ./inferencer_test.exe))

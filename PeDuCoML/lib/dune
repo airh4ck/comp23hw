@@ -1,5 +1,14 @@
 (library
- (modules Ast Parser Pprintast Inferencer Typing Util Anf Pprintanf)
+ (modules
+  Ast
+  Parser
+  Pprintast
+  Inferencer
+  Typing
+  Util
+  Anf
+  Pprintanf
+  Closure_conversion)
  (libraries angstrom)
  (preprocess
   (pps ppx_expect ppx_deriving.show ppx_deriving.eq))

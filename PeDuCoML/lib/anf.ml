@@ -56,12 +56,12 @@ let acexpr cexpr = ACExpr cexpr
 let acimm imm_expr = acexpr @@ cimm imm_expr
 (* ------------------ *)
 
-module AnfConvert : sig
+module State : sig
   type 'a t
 
   include Base.Monad.Infix with type 'a t := 'a t
 
-  val fresh : unique_id t
+  val fresh : int t
   val bind : 'a t -> ('a -> 'b t) -> 'b t
   val return : 'a -> 'a t
   val ( let* ) : 'a t -> ('a -> 'b t) -> 'b t
@@ -89,10 +89,10 @@ end = struct
  ;;
 end
 
-open AnfConvert
+open State
 
 let rec anf (env : (string, 'a, Base.String.comparator_witness) Base.Map.t) expr k
-  : aexpr AnfConvert.t
+  : aexpr State.t
   =
   match expr with
   | ELiteral literal ->
@@ -124,7 +124,7 @@ let rec anf (env : (string, 'a, Base.String.comparator_witness) Base.Map.t) expr
     let* body = k @@ imm_id fresh_var in
     let rec helper curr_list = function
       | head :: tail -> anf env head (fun imm -> helper (imm :: curr_list) tail)
-      | _ -> return @@ alet fresh_var (clist @@ List.rev curr_list) body
+      | _ -> return @@ alet fresh_var (clist @@ Base.List.rev curr_list) body
     in
     helper [] expr_list
   | ETuple (first_elem, second_elem, other_elems) ->
@@ -133,7 +133,7 @@ let rec anf (env : (string, 'a, Base.String.comparator_witness) Base.Map.t) expr
     let* body = k @@ imm_id fresh_var in
     let rec helper curr_list = function
       | head :: tail -> anf env head (fun imm -> helper (imm :: curr_list) tail)
-      | _ -> return @@ alet fresh_var (ctuple @@ List.rev curr_list) body
+      | _ -> return @@ alet fresh_var (ctuple @@ Base.List.rev curr_list) body
     in
     helper [] all_elems
   | EIf (condition, true_branch, false_branch) ->
@@ -154,7 +154,7 @@ let rec anf (env : (string, 'a, Base.String.comparator_witness) Base.Map.t) expr
     let* fresh_var = fresh in
     (match first_declaration with
      | DDeclaration (name, pattern_list, expr) ->
-       if List.length pattern_list = 0
+       if Base.List.length pattern_list = 0
        then (
          let new_env = Base.Map.update env name ~f:(fun _ -> fresh_var) in
          anf env expr (fun imm_expr ->
@@ -169,7 +169,7 @@ let rec anf (env : (string, 'a, Base.String.comparator_witness) Base.Map.t) expr
          failwith
            "AST to ANF convertion error: internal let-expressions must not have any args."
      | DRecursiveDeclaration (name, pattern_list, expr) ->
-       if List.length pattern_list = 0
+       if Base.List.length pattern_list = 0
        then (
          let env = Base.Map.update env name ~f:(fun _ -> fresh_var) in
          anf env expr (fun imm_expr ->
@@ -199,7 +199,8 @@ let rec anf (env : (string, 'a, Base.String.comparator_witness) Base.Map.t) expr
         let* new_env = update_map env (fst head) in
         let* case_anf = anf new_env (snd head) (fun imm -> return @@ acimm imm) in
         helper imm_matched env ((fst head, case_anf) :: curr_list) tail
-      | _ -> return @@ alet fresh_var (cmatch_with imm_matched @@ List.rev curr_list) body
+      | _ ->
+        return @@ alet fresh_var (cmatch_with imm_matched @@ Base.List.rev curr_list) body
     in
     anf env matched_expression (fun imm_matched -> helper imm_matched env [] case_list)
   | EFun _ ->
@@ -244,7 +245,7 @@ let process_declaration env declaration =
 
 let anf_conversion (program : declaration list)
   : (string, global_scope_function, Base.String.comparator_witness) Base.Map.t
-  AnfConvert.t
+  State.t
   =
   let rec helper env current_map = function
     | head :: tail ->

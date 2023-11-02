@@ -130,7 +130,7 @@ end = struct
 
   let singleton key value =
     let* key, value = mapping key value in
-    return @@ Base.Map.update empty key ~f:(fun _ -> value)
+    return @@ Base.Map.set empty ~key ~data:value
   ;;
 
   let find_exn key subst = Base.Map.find_exn subst key
@@ -226,7 +226,7 @@ end
 module TypeEnv = struct
   type t = (identifier, scheme, Base.String.comparator_witness) Base.Map.t
 
-  let extend env id scheme = Base.Map.update env id ~f:(fun _ -> scheme)
+  let extend env id scheme = Base.Map.set env ~key:id ~data:scheme
   let empty = Base.Map.empty (module Base.String)
 
   let free_vars : t -> (type_variable_number, Base.Int.comparator_witness) Base.Set.t =

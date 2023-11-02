@@ -156,7 +156,7 @@ let rec anf (env : (string, 'a, Base.String.comparator_witness) Base.Map.t) expr
      | DDeclaration (name, pattern_list, expr) ->
        if Base.List.length pattern_list = 0
        then (
-         let new_env = Base.Map.update env name ~f:(fun _ -> fresh_var) in
+         let new_env = Base.Map.set env ~key:name ~data:fresh_var in
          anf env expr (fun imm_expr ->
            match other_declarations with
            | head :: tail ->
@@ -171,7 +171,7 @@ let rec anf (env : (string, 'a, Base.String.comparator_witness) Base.Map.t) expr
      | DRecursiveDeclaration (name, pattern_list, expr) ->
        if Base.List.length pattern_list = 0
        then (
-         let env = Base.Map.update env name ~f:(fun _ -> fresh_var) in
+         let env = Base.Map.set env ~key:name ~data:fresh_var in
          anf env expr (fun imm_expr ->
            match other_declarations with
            | head :: tail ->
@@ -192,7 +192,7 @@ let rec anf (env : (string, 'a, Base.String.comparator_witness) Base.Map.t) expr
       Base.Set.fold_right identifiers ~init:(return env) ~f:(fun id acc ->
         let* fresh_var = fresh in
         let* acc = acc in
-        return @@ Base.Map.update acc id ~f:(fun _ -> fresh_var))
+        return @@ Base.Map.set acc ~key:id ~data:fresh_var)
     in
     let rec helper imm_matched env curr_list = function
       | head :: tail ->
@@ -221,7 +221,7 @@ let process_declaration env declaration =
     Base.Set.fold_right all_pattern_ids ~init:(return env) ~f:(fun id acc ->
       let* fresh_var = fresh in
       let* acc = acc in
-      return @@ Base.Map.update acc id ~f:(fun _ -> fresh_var))
+      return @@ Base.Map.set acc ~key:id ~data:fresh_var)
   in
   let get_function env pattern_list expr =
     let* env = update_map env @@ find_all_pattern_ids pattern_list in
@@ -239,7 +239,7 @@ let process_declaration env declaration =
   | DDeclaration (name, pattern_list, expr) ->
     return @@ (name, fresh_var, get_function env pattern_list expr)
   | DRecursiveDeclaration (name, pattern_list, expr) ->
-    let env = Base.Map.update env name ~f:(fun _ -> fresh_var) in
+    let env = Base.Map.set env ~key:name ~data:fresh_var in
     return @@ (name, fresh_var, get_function env pattern_list expr)
 ;;
 
@@ -250,8 +250,8 @@ let anf_conversion (program : declaration list)
     | head :: tail ->
       let* name, fresh_var, anf_function = process_declaration env head in
       let* anf_function = anf_function in
-      let env = Base.Map.update env name ~f:(fun _ -> fresh_var) in
-      let current_map = Base.Map.update current_map name ~f:(fun _ -> anf_function) in
+      let env = Base.Map.set env ~key:name ~data:fresh_var in
+      let current_map = Base.Map.set current_map ~key:name ~data:anf_function in
       helper env current_map tail
     | _ -> return @@ current_map
   in

@@ -19,16 +19,14 @@ type cexpr =
   | CTuple of imm_expr list
   | CIf of imm_expr * imm_expr * imm_expr
   | CConstructList of imm_expr * imm_expr
-  | CMatchWith of imm_expr * (pattern * aexpr) list
+  (* | CMatchWith of imm_expr * (pattern * aexpr) list *)
   | CImm of imm_expr
 
 and aexpr =
   | ALet of unique_id * cexpr * aexpr
   | ACExpr of cexpr
 
-type global_scope_function =
-  | FunctionWithArgs of (imm_expr -> global_scope_function)
-  | FunctionNoArgs of aexpr
+type global_scope_function = string * imm_expr list * aexpr
 
 (* Smart constructors *)
 (* imm_expr *)
@@ -48,7 +46,7 @@ let clist imm_expr_list = CList imm_expr_list
 let ctuple imm_expr_list = CTuple imm_expr_list
 let cif condition true_branch false_branch = CIf (condition, true_branch, false_branch)
 let cconstruct_list operand imm_expr_list = CConstructList (operand, imm_expr_list)
-let cmatch_with imm_expr case_list = CMatchWith (imm_expr, case_list)
+(* let cmatch_with imm_expr case_list = CMatchWith (imm_expr, case_list) *)
 
 (* aexpr *)
 let alet id cexpr aexpr = ALet (id, cexpr, aexpr)
@@ -72,10 +70,10 @@ end = struct
   let fresh last = last, last + 1
 
   let ( >>= ) : 'a t -> ('a -> 'b t) -> 'b t =
-   fun m f state ->
+    fun m f state ->
     let value, st = m state in
     (f value) st
- ;;
+  ;;
 
   let bind m f = m >>= f
   let return value st = value, st
@@ -83,15 +81,138 @@ end = struct
   let run monad = fst @@ monad 0
 
   let ( >>| ) : 'a t -> ('a -> 'b) -> 'b t =
-   fun m f state ->
+    fun m f state ->
     let value, st = m state in
     f value, st
- ;;
+  ;;
 end
 
 open State
 
-let rec anf (env : (string, 'a, Base.String.comparator_witness) Base.Map.t) expr k
+(* Runtime fuctions (unavailable to users)
+   | name        | args         | id   |
+   -------------------------------------
+   | `head       | list         | -1   |
+   | `tail       | list         | -2   |
+   | `length     | list         | -3   |
+   | `at_list    | list index   | -4   |
+   | `at_tuple   | tuple index  | -4   |
+   -------------------------------------*)
+
+let rec rewrite_match = function
+  | EBinaryOperation (bop, left, right) ->
+    let left_rewritten = rewrite_match left in
+    let right_rewritten = rewrite_match right in
+    ebinary_operation bop left_rewritten right_rewritten
+  | EUnaryOperation (uop, operand) ->
+    let operand_rewritten = rewrite_match operand in
+    eunary_operation uop operand_rewritten
+  | EApplication (fun_expr, arg_expr) ->
+    let fun_expr_rewritten = rewrite_match fun_expr in
+    let arg_expr_rewritten = rewrite_match arg_expr in
+    eapplication fun_expr_rewritten arg_expr_rewritten
+  | EList expr_list -> elist @@ List.map (fun e -> rewrite_match e) expr_list
+  | ETuple (first_elem, second_elem, other_elems) ->
+    let first_elem_rewritten = rewrite_match first_elem in
+    let second_elem_rewritten = rewrite_match second_elem in
+    etuple first_elem_rewritten second_elem_rewritten
+    @@ List.map (fun e -> rewrite_match e) other_elems
+  | EIf (condition, true_branch, false_branch) ->
+    let condition_rewritten = rewrite_match condition in
+    let true_branch_rewritten = rewrite_match true_branch in
+    let false_branch_rewritten = rewrite_match false_branch in
+    eif condition_rewritten true_branch_rewritten false_branch_rewritten
+  | EConstructList (operand, expr_list) ->
+    let operand_rewritten = rewrite_match operand in
+    let expr_list_rewritten = rewrite_match expr_list in
+    econstruct_list operand_rewritten expr_list_rewritten
+  | ELetIn (first_declaration, other_declarations, body) ->
+    let get_constructor = function
+      | DDeclaration _ -> ddeclaration
+      | DRecursiveDeclaration _ -> drecursivedeclaration
+    in
+    let process_declaration = function
+      | ( DDeclaration (name, pattern_list, expr)
+        | DRecursiveDeclaration (name, pattern_list, expr) ) as original ->
+        if Base.List.length pattern_list = 0
+        then get_constructor original name pattern_list @@ rewrite_match expr
+        else
+          failwith
+            "AST to ANF convertion error: internal let-expressions must not have any \
+             args."
+    in
+    eletin
+      (process_declaration first_declaration)
+      (List.map process_declaration other_declarations)
+      (rewrite_match body)
+  | EMatchWith (matched_expression, first_case, other_cases) ->
+    let cases = first_case :: other_cases in
+    let rec get_match_condition matched_expression = function
+      | PLiteral literal -> ebinary_operation Eq matched_expression (eliteral literal)
+      | PWildcard -> eliteral @@ lbool true
+      | PList pattern_list ->
+        let pattern_list_length = List.length pattern_list in
+        let partial_condition =
+          eif
+            (ebinary_operation
+               NEq
+               (eapplication (eidentifier "`length") matched_expression)
+               (eliteral @@ lint pattern_list_length))
+            (eliteral @@ lbool false)
+        in
+        let elems_condition =
+          Base.List.fold_right
+            ~init:(eliteral @@ lbool true, 0)
+            pattern_list
+            ~f:(fun pattern (cond, ind) ->
+              let pattern_condition =
+                get_match_condition
+                  (eapplication
+                     (eapplication (eidentifier "`at_list") matched_expression)
+                     (eliteral @@ lint ind))
+                  pattern
+              in
+              ebinary_operation AND cond pattern_condition, ind + 1)
+        in
+        partial_condition (fst elems_condition)
+      | PTuple (first_pattern, second_pattern, pattern_list) ->
+        let pattern_list = first_pattern :: second_pattern :: pattern_list in
+        let pattern_list_length = List.length pattern_list in
+        let elems_condition =
+          Base.List.fold_right
+            ~init:(eliteral @@ lbool true, 0)
+            pattern_list
+            ~f:(fun pattern (cond, ind) ->
+              let pattern_condition =
+                get_match_condition
+                  (eapplication
+                     (eapplication (eidentifier "`at_tuple") matched_expression)
+                     (eliteral @@ lint ind))
+                  pattern
+              in
+              ebinary_operation AND cond pattern_condition, ind + 1)
+        in
+        fst elems_condition
+      | PConstructList (first_pattern, second_pattern) ->
+        let partial_condition =
+          eif
+            (ebinary_operation
+               NEq
+               (eapplication (eidentifier "`length") matched_expression)
+               (eliteral @@ lint pattern_list_length))
+            (eliteral @@ lbool false)
+        in
+      | PIdentifier id -> failwith ""
+    in
+    failwith ""
+  | EFun _ ->
+    failwith
+      "AST to ANF convertion error: EFun constructor cannot be used in the program after \
+       closure conversion and lambda lifting."
+  | e -> e
+;;
+
+(* let rec anf (env : (string, 'a, Base.String.comparator_witness) Base.Map.t) expr k
   : aexpr State.t
   =
   match expr with
@@ -184,7 +305,7 @@ let rec anf (env : (string, 'a, Base.String.comparator_witness) Base.Map.t) expr
          failwith
            "AST to ANF convertion error: internal let-expressions must not have any args.")
   | EMatchWith (matched_expression, first_case, other_cases) ->
-    let case_list = first_case :: other_cases in
+    (* let case_list = first_case :: other_cases in
     let* fresh_var = fresh in
     let* body = k @@ imm_id fresh_var in
     let update_map env patt =
@@ -202,7 +323,27 @@ let rec anf (env : (string, 'a, Base.String.comparator_witness) Base.Map.t) expr
       | _ ->
         return @@ alet fresh_var (cmatch_with imm_matched @@ Base.List.rev curr_list) body
     in
+    anf env matched_expression (fun imm_matched -> helper imm_matched env [] case_list) *)
+    let case_list = first_case :: other_cases in
+    let* fresh_var = fresh in
+    let* body = k @@ imm_id fresh_var in
+    let update_map env patt =
+      let identifiers = Util.find_identifiers_pattern patt in
+      Base.Set.fold_right identifiers ~init:(return env) ~f:(fun id acc ->
+        let* fresh_var = fresh in
+        let* acc = acc in
+        return @@ Base.Map.set acc ~key:id ~data:fresh_var)
+   in
+    let rec helper imm_matched env curr_condition = function
+      | head :: tail ->
+        let* new_env = update_map env (fst head) in
+        let* case_anf = anf new_env (snd head) (fun imm -> return @@ acimm imm) in
+        helper imm_matched env ((fst head, case_anf) :: curr_list) tail
+      | _ ->
+        return @@ alet fresh_var (cmatch_with imm_matched @@ Base.List.rev curr_list) body
+    in
     anf env matched_expression (fun imm_matched -> helper imm_matched env [] case_list)
+
   | EFun _ ->
     failwith
       "AST to ANF convertion error: EFun constructor cannot be used in the program after \
@@ -265,4 +406,4 @@ let run_anf_conversion program
   : (string, global_scope_function, Base.String.comparator_witness) Base.Map.t
   =
   run @@ anf_conversion program
-;;
+;; *)

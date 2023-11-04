@@ -109,7 +109,7 @@ let closure_conversion =
       ematchwith matched first_case other_cases
     | expr -> expr
   in
-  closure_expression
+  closure_expression (Base.Map.empty (module Base.String))
 ;;
 
 let run_closure =
@@ -117,7 +117,6 @@ let run_closure =
     | DDeclaration _ -> ddeclaration
     | DRecursiveDeclaration _ -> drecursivedeclaration
   in
-  let env = Base.Map.empty (module Base.String) in
   let rec helper acc = function
     | [] -> acc
     | head :: tail ->
@@ -125,7 +124,7 @@ let run_closure =
        | ( DDeclaration (id, pattern_list, body)
          | DRecursiveDeclaration (id, pattern_list, body) ) as original ->
          let decl = get_constructor original in
-         let body = closure_conversion env body in
+         let body = closure_conversion body in
          helper (decl id pattern_list body :: acc) tail)
   in
   helper []

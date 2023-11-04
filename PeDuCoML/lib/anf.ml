@@ -1,5 +1,4 @@
 open Ast
-open Util
 
 type unique_id = int [@@deriving eq, show { with_path = false }]
 

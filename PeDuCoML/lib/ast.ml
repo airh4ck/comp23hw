@@ -1,5 +1,4 @@
 type id = string [@@deriving eq, show { with_path = false }]
-type data_constructor_name = string [@@deriving eq, show { with_path = false }]
 
 type literal =
   | LInt of int (** 42 *)
@@ -40,10 +39,10 @@ type expression =
   | EConstructList of expression * expression (** 1 :: [2; 3] *)
   | ETuple of expression * expression * expression list (** (1, "Vasya Pupkin", '\n') *)
   | ELetIn of declaration * declaration list * expression
-      (** let x = 1 and y = 2 in x + y *)
+  (** let x = 1 and y = 2 in x + y *)
   | EIf of expression * expression * expression (** if true then 1 else 0 *)
   | EMatchWith of expression * (pattern * expression) * (pattern * expression) list
-      (** match x with _ -> x *)
+  (** match x with _ -> x *)
 
 and pattern =
   | PLiteral of literal (** true *)
@@ -56,7 +55,7 @@ and pattern =
 and declaration =
   | DDeclaration of id * pattern list * expression (** let add x y = x + y *)
   | DRecursiveDeclaration of id * pattern list * expression
-      (** let rec factorial n = n * factorial (n - 1) *)
+  (** let rec factorial n = n * factorial (n - 1) *)
 
 (* Smart constructors for literals *)
 let lint x = LInt x

@@ -1,5 +1,5 @@
 open Ast
-(* open Util *)
+open Util
 
 type unique_id = int [@@deriving eq, show { with_path = false }]
 
@@ -19,7 +19,6 @@ type cexpr =
   | CTuple of imm_expr list
   | CIf of imm_expr * imm_expr * imm_expr
   | CConstructList of imm_expr * imm_expr
-  (* | CMatchWith of imm_expr * (pattern * aexpr) list *)
   | CImm of imm_expr
 
 and aexpr =
@@ -46,7 +45,6 @@ let clist imm_expr_list = CList imm_expr_list
 let ctuple imm_expr_list = CTuple imm_expr_list
 let cif condition true_branch false_branch = CIf (condition, true_branch, false_branch)
 let cconstruct_list operand imm_expr_list = CConstructList (operand, imm_expr_list)
-(* let cmatch_with imm_expr case_list = CMatchWith (imm_expr, case_list) *)
 
 (* aexpr *)
 let alet id cexpr aexpr = ALet (id, cexpr, aexpr)
@@ -96,22 +94,20 @@ open State
    | `tail       | list         | -2   |
    | `length     | list         | -3   |
    | `at_list    | list index   | -4   |
-   | `at_tuple   | tuple index  | -4   |
+   | `at_tuple   | tuple index  | -5   |
    -------------------------------------*)
 
-let rt_head = eapplication (eidentifier "`head")
-let rt_tail = eapplication (eidentifier "`tail")
-let rt_length = eapplication (eidentifier "`length")
-
-let rt_at_list lst idx =
-  eapplication (eapplication (eidentifier "`at_list") lst) (eliteral @@ lint idx)
-;;
-
-let rt_at_tuple tuple idx =
-  eapplication (eapplication (eidentifier "`at_tuple") tuple) (eliteral @@ lint idx)
-;;
-
-let rec rewrite_match = function
+let rec rewrite_match expr =
+  let rt_head = eapplication (eidentifier "`head") in
+  let rt_tail = eapplication (eidentifier "`tail") in
+  let rt_length = eapplication (eidentifier "`length") in
+  let rt_at_list lst idx =
+    eapplication (eapplication (eidentifier "`at_list") lst) (eliteral @@ lint idx)
+  in
+  let rt_at_tuple tuple idx =
+    eapplication (eapplication (eidentifier "`at_tuple") tuple) (eliteral @@ lint idx)
+  in
+  match expr with
   | EBinaryOperation (bop, left, right) ->
     let left_rewritten = rewrite_match left in
     let right_rewritten = rewrite_match right in
@@ -253,7 +249,7 @@ let rec rewrite_match = function
   | e -> e
 ;;
 
-let rec anf (env : (string, 'a, Base.String.comparator_witness) Base.Map.t) expr k
+let rec anf (env : (string, unique_id, Base.String.comparator_witness) Base.Map.t) expr k
   : aexpr State.t
   =
   let expr = rewrite_match expr in
@@ -356,38 +352,39 @@ let rec anf (env : (string, 'a, Base.String.comparator_witness) Base.Map.t) expr
        closure conversion and lambda lifting."
 ;;
 
-(* let process_declaration env declaration =
-  let find_all_pattern_ids pattern_list =
-    let rec helper acc = function
-      | head :: tail -> helper (Base.Set.union acc (find_identifiers_pattern head)) tail
-      | _ -> acc
-    in
-    helper empty pattern_list
+let process_declaration env declaration =
+  let rec helper current_expr current_arg_number args_list = function
+    | head :: tail ->
+      let arg_name = "``" ^ string_of_int current_arg_number in
+      helper
+        (ematchwith (eidentifier arg_name) (head, current_expr) [])
+        (current_arg_number + 1)
+        (arg_name :: args_list)
+        tail
+    | _ -> args_list, current_expr
   in
-  let update_map env all_pattern_ids =
-    Base.Set.fold_right all_pattern_ids ~init:(return env) ~f:(fun id acc ->
+  let update_map env args_list =
+    Base.List.fold_right args_list ~init:(return env) ~f:(fun id acc ->
       let* fresh_var = fresh in
       let* acc = acc in
       return @@ Base.Map.set acc ~key:id ~data:fresh_var)
   in
-  let get_function env pattern_list expr =
-    let* env = update_map env @@ find_all_pattern_ids pattern_list in
-    let* function_body_aexpr = anf env expr (fun imm -> return @@ acimm imm) in
-    let rec helper current_aexpr = function
-      | head :: tail ->
-        FunctionWithArgs
-          (fun imm -> helper (acexpr @@ cmatch_with imm [ head, current_aexpr ]) tail)
-      | _ -> FunctionNoArgs current_aexpr
-    in
-    return @@ helper function_body_aexpr pattern_list
+  let gen_imm_id env name = imm_id @@ Base.Map.find_exn env name in
+  let gen_global_scope_function env name pattern_list expr =
+    let args_list, expr = helper expr 1 [] pattern_list in
+    let* env = update_map env args_list in
+    let* anf_representation = anf env expr (fun imm -> return @@ acimm imm) in
+    return (name, List.map (gen_imm_id env) args_list, anf_representation)
   in
   let* fresh_var = fresh in
   match declaration with
   | DDeclaration (name, pattern_list, expr) ->
-    return @@ (name, fresh_var, get_function env pattern_list expr)
+    let* global_scope_f = gen_global_scope_function env name pattern_list expr in
+    return (global_scope_f, fresh_var)
   | DRecursiveDeclaration (name, pattern_list, expr) ->
     let env = Base.Map.set env ~key:name ~data:fresh_var in
-    return @@ (name, fresh_var, get_function env pattern_list expr)
+    let* global_scope_f = gen_global_scope_function env name pattern_list expr in
+    return (global_scope_f, fresh_var)
 ;;
 
 let anf_conversion (program : declaration list)
@@ -395,21 +392,23 @@ let anf_conversion (program : declaration list)
   =
   let rec helper env current_map = function
     | head :: tail ->
-      let* name, fresh_var, anf_function = process_declaration env head in
-      let* anf_function = anf_function in
+      let* ((name, _, _) as global_scope_f), fresh_var = process_declaration env head in
       let env = Base.Map.set env ~key:name ~data:fresh_var in
-      let current_map = Base.Map.set current_map ~key:name ~data:anf_function in
+      let current_map = Base.Map.set current_map ~key:name ~data:global_scope_f in
       helper env current_map tail
     | _ -> return @@ current_map
   in
-  helper
-    (Base.Map.empty (module Base.String))
-    (Base.Map.empty (module Base.String))
-    program
+  let env = Base.Map.empty (module Base.String) in
+  let env = Base.Map.set env ~key:"`head" ~data:(-1) in
+  let env = Base.Map.set env ~key:"`tail" ~data:(-2) in
+  let env = Base.Map.set env ~key:"`length" ~data:(-3) in
+  let env = Base.Map.set env ~key:"`at_list" ~data:(-4) in
+  let env = Base.Map.set env ~key:"`at_tuple" ~data:(-5) in
+  helper env (Base.Map.empty (module Base.String)) program
 ;;
 
 let run_anf_conversion program
   : (string, global_scope_function, Base.String.comparator_witness) Base.Map.t
   =
   run @@ anf_conversion program
-;; *)
+;;

@@ -3,6 +3,8 @@ open PeDuCoML.Pprintast
 open PeDuCoML.Closure_conversion
 open PeDuCoML.Ast
 open PeDuCoML.Util
+open PeDuCoML.Inferencer
+open PeDuCoML.Typing
 
 type func =
   | FFun of expression
@@ -92,10 +94,13 @@ let pp_func fmt = function
 let print_anf code =
   match parse code with
   | Ok ast ->
-    let closure = run_closure ast in
-    (match check_closures closure with
-     | [] -> ()
-     | failed -> List.iter (fun func -> Format.printf "%a\n" pp_func func) failed)
+    (match R.run (check_types ast) with
+     | Ok _ ->
+       let closure = run_closure ast in
+       (match check_closures closure with
+        | [] -> Format.printf "Ok!\n"
+        | failed -> List.iter (fun func -> Format.printf "%a\n" pp_func func) failed)
+     | Error err -> print_type_error err)
   | Error err -> Format.printf "%s\n" err
 ;;
 

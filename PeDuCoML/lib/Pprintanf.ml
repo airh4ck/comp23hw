@@ -47,12 +47,6 @@ let rec pp_cexpr fmt =
       pp_immexpr
       false_branch
   | CConstructList (head, tail) -> fprintf fmt "%a :: %a" pp_immexpr head pp_immexpr tail
-  | CMatchWith (matched, case_list) ->
-    fprintf fmt "match %a with" pp_immexpr matched;
-    List.iter
-      (fun (case, action) ->
-        fprintf fmt " | %a -> %a" Pprintast.pp_pattern case pp_aexpr action)
-      case_list
   | CImm immexpr -> pp_immexpr fmt immexpr
 
 and pp_aexpr fmt = function
@@ -61,16 +55,16 @@ and pp_aexpr fmt = function
   | ACExpr cexpr -> pp_cexpr fmt cexpr
 ;;
 
-let pp_global_scope_function =
-  let id = ref 0 in
-  let rec helper fmt = function
-    | FunctionNoArgs aexpr -> Format.fprintf fmt "%a\n" pp_aexpr aexpr
-    | FunctionWithArgs func ->
-      Format.fprintf fmt "%a\n" helper (func (imm_id !id));
-      id := !id + 1
-  in
-  helper
-;;
+(* let pp_global_scope_function =
+   let id = ref 0 in
+   let rec helper fmt = function
+   | FunctionNoArgs aexpr -> Format.fprintf fmt "%a\n" pp_aexpr aexpr
+   | FunctionWithArgs func ->
+   Format.fprintf fmt "%a\n" helper (func (imm_id !id));
+   id := !id + 1
+   in
+   helper
+   ;; *)
 
 let%expect_test _ =
   printf "%a" pp_immexpr @@ ImmInt 2;

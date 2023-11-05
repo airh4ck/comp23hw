@@ -33,18 +33,25 @@ let lambda_lift =
       | ELetIn (first_decl, other_decls, body) ->
         let* old_name, fresh_name, first, lifted = ll_decl env lifted_decls first_decl in
         let lifted = if old_name = fresh_name then lifted else first :: lifted in
-        let* env, lifted =
+        let decl_acc = if old_name = fresh_name then [ first ] else [] in
+        let* env, lifted, decl_acc =
           Base.List.fold_right
             other_decls
             ~f:(fun decl acc ->
-              let* env, lifted = acc in
+              let* env, lifted, decl_acc = acc in
               let* old_name, fresh_name, decl, lifted = ll_decl env lifted decl in
               let lifted = if old_name = fresh_name then lifted else decl :: lifted in
-              return @@ (Base.Map.set env ~key:old_name ~data:fresh_name, lifted))
-            ~init:(return (Base.Map.set env ~key:old_name ~data:fresh_name, lifted))
+              let decl_acc =
+                if old_name = fresh_name then decl :: decl_acc else decl_acc
+              in
+              return @@ (Base.Map.set env ~key:old_name ~data:fresh_name, lifted, decl_acc))
+            ~init:
+              (return (Base.Map.set env ~key:old_name ~data:fresh_name, lifted, decl_acc))
         in
         let* body, lifted = ll_expr env lifted body in
-        return (body, lifted)
+        (match decl_acc with
+         | head :: tail -> return @@ (eletin head tail body, lifted)
+         | [] -> return (body, lifted))
       | EBinaryOperation (bop, left, right) ->
         let* left, lifted = ll_expr env lifted_decls left in
         let* right, lifted = ll_expr env lifted right in

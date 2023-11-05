@@ -17,7 +17,7 @@
   >   (42 + add_k 42 (-42))
   > EOF
   let `ll_0 k x y = (x + y) * k
-  let main k = 42 + (((`ll_0 k) 42) (-42))
+  let main k = let waste_of_space  = () in 42 + (((`ll_0 k) 42) (-42))
   $ ./defunc_test.exe <<- EOF
   > let main k = 
   >   let add_k x y = (x + y) * k in
@@ -90,7 +90,7 @@
   > let main = count_solutions_of_sq_equation 2 9 4
   > EOF
   let `ll_0 x = x * x
-  let count_solutions_of_sq_equation a b c = if d > 0 then 2 else if d = 0 then 1 else 0
+  let count_solutions_of_sq_equation a b c = let d  = (`ll_0 b) - ((4 * a) * c) in if d > 0 then 2 else if d = 0 then 1 else 0
   let main  = ((count_solutions_of_sq_equation 2) 9) 4
   $ ./defunc_test.exe <<- EOF
   > let main x = 
@@ -155,7 +155,7 @@
   > EOF
   let `ll_0 k x y = x + k
   let `ll_1 x = x
-  let main k i = match `ll_0 k with | f -> f i
+  let main k i = match `ll_0 k with | f -> let id  = `ll_1 in f i
   $ ./defunc_test.exe <<- EOF
   > let phi n = 
   >   let rec helper last1 last2 n = 

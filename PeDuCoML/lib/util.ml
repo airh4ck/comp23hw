@@ -40,7 +40,7 @@ let find_identifiers =
         Base.List.fold_right
           (first_arg :: other_args)
           ~f:(fun pattern acc -> Base.Set.union acc (find_identifiers_pattern pattern))
-          ~init:acc
+          ~init:empty
       in
       Base.Set.diff (helper acc body) pattern_args
     | EList expr_list ->
@@ -59,7 +59,7 @@ let find_identifiers =
       let acc = helper acc condition in
       helper (helper acc true_branch) false_branch
     | EMatchWith (matched, (pattern, action), other_cases) ->
-      let acc = Base.Set.diff (find_identifiers_pattern pattern) (helper acc action) in
+      let acc = Base.Set.diff (helper acc action) (find_identifiers_pattern pattern) in
       (match other_cases with
        | head :: tail -> helper acc (ematchwith matched head tail)
        | [] -> helper acc matched)

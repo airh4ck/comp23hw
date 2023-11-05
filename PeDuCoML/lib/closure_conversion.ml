@@ -1,22 +1,29 @@
 open Util
 open Ast
 
-let closure_conversion =
-  let rec closure_declaration env =
+let closure_conversion global_scope =
+  let rec closure_declaration env global_scope =
     let get_constructor = function
       | DDeclaration _ -> ddeclaration
       | DRecursiveDeclaration _ -> drecursivedeclaration
     in
     function
     | ( DDeclaration (name, pattern_list, body)
-      | DRecursiveDeclaration (name, pattern_list, body) ) as original ->
+      | DRecursiveDeclaration (name, pattern_list, body) ) as original
+      when Base.List.length pattern_list > 0 ->
       let pattern_args =
         List.fold_right
           (fun pattern acc -> Base.Set.union (find_identifiers_pattern pattern) acc)
           pattern_list
           empty
       in
+      let pattern_args =
+        match original with
+        | DDeclaration _ -> pattern_args
+        | DRecursiveDeclaration _ -> Base.Set.add pattern_args name
+      in
       let free_vars = Base.Set.diff (find_identifiers body) pattern_args in
+      let free_vars = Base.Set.diff free_vars global_scope in
       let closed_args =
         Base.Set.fold
           free_vars
@@ -25,8 +32,12 @@ let closure_conversion =
       in
       let decl = get_constructor original in
       let env = Base.Map.set env ~key:name ~data:free_vars in
-      decl name closed_args (closure_expression env body), env
-  and closure_expression env = function
+      decl name closed_args (closure_expression env global_scope body), env
+    | (DDeclaration (name, _, body) | DRecursiveDeclaration (name, _, body)) as original
+      ->
+      let decl = get_constructor original in
+      decl name [] (closure_expression env global_scope body), env
+  and closure_expression env global_scope = function
     | EFun (first_arg, other_args, body) as original ->
       let pattern_list = first_arg :: other_args in
       let pattern_args =
@@ -36,12 +47,14 @@ let closure_conversion =
           empty
       in
       let free_vars = Base.Set.diff (find_identifiers body) pattern_args in
+      let free_vars = Base.Set.diff free_vars global_scope in
       let closed_args =
         Base.Set.fold
           free_vars
           ~f:(fun acc var -> pidentifier var :: acc)
           ~init:pattern_list
       in
+      let body = closure_expression env global_scope body in
       (match closed_args with
        | [] -> original
        | head :: tail ->
@@ -50,15 +63,15 @@ let closure_conversion =
            ~f:(fun var acc -> eapplication acc (eidentifier var))
            ~init:(efun head tail body))
     | ELetIn (first_decl, other_decls, body) ->
-      let decl, env = closure_declaration env first_decl in
+      let decl, env = closure_declaration env global_scope first_decl in
       let rec helper decl_list acc env =
         match decl_list with
         | head :: tail ->
-          let head_decl, env = closure_declaration env head in
+          let head_decl, env = closure_declaration env global_scope head in
           helper tail (head_decl :: acc) env
         | _ -> acc
       in
-      eletin decl (helper other_decls [] env) (closure_expression env body)
+      eletin decl (helper other_decls [] env) (closure_expression env global_scope body)
     | EIdentifier id as original ->
       (match Base.Map.find env id with
        | None -> original
@@ -68,64 +81,68 @@ let closure_conversion =
            ~f:(fun var acc -> eapplication acc (eidentifier var))
            ~init:original)
     | EBinaryOperation (bop, left, right) ->
-      let left = closure_expression env left in
-      let right = closure_expression env right in
+      let left = closure_expression env global_scope left in
+      let right = closure_expression env global_scope right in
       ebinary_operation bop left right
     | EUnaryOperation (operator, operand) ->
-      let operand = closure_expression env operand in
+      let operand = closure_expression env global_scope operand in
       eunary_operation operator operand
     | EApplication (func, arg) ->
-      let func = closure_expression env func in
-      let arg = closure_expression env arg in
+      let func = closure_expression env global_scope func in
+      let arg = closure_expression env global_scope arg in
       eapplication func arg
     | EList expr_list ->
       let expr_list =
-        Base.List.map expr_list ~f:(fun expr -> closure_expression env expr)
+        Base.List.map expr_list ~f:(fun expr -> closure_expression env global_scope expr)
       in
       elist expr_list
     | EConstructList (head, tail) ->
-      let head = closure_expression env head in
-      let tail = closure_expression env tail in
+      let head = closure_expression env global_scope head in
+      let tail = closure_expression env global_scope tail in
       econstruct_list head tail
     | ETuple (first_elem, second_elem, other_elems) ->
-      let first_elem = closure_expression env first_elem in
-      let second_elem = closure_expression env second_elem in
+      let first_elem = closure_expression env global_scope first_elem in
+      let second_elem = closure_expression env global_scope second_elem in
       let other_elems =
-        Base.List.map other_elems ~f:(fun elem -> closure_expression env elem)
+        Base.List.map other_elems ~f:(fun elem ->
+          closure_expression env global_scope elem)
       in
       etuple first_elem second_elem other_elems
     | EIf (expr, true_branch, false_branch) ->
-      let expr = closure_expression env expr in
-      let true_branch = closure_expression env true_branch in
-      let false_branch = closure_expression env false_branch in
+      let expr = closure_expression env global_scope expr in
+      let true_branch = closure_expression env global_scope true_branch in
+      let false_branch = closure_expression env global_scope false_branch in
       eif expr true_branch false_branch
     | EMatchWith (matched, first_case, other_cases) ->
-      let matched = closure_expression env matched in
-      let first_case = fst first_case, closure_expression env (snd first_case) in
+      let matched = closure_expression env global_scope matched in
+      let first_case =
+        fst first_case, closure_expression env global_scope (snd first_case)
+      in
       let other_cases =
         Base.List.map other_cases ~f:(fun (pattern, action) ->
-          pattern, closure_expression env action)
+          pattern, closure_expression env global_scope action)
       in
       ematchwith matched first_case other_cases
     | expr -> expr
   in
-  closure_expression (Base.Map.empty (module Base.String))
+  closure_expression (Base.Map.empty (module Base.String)) global_scope
 ;;
 
-let run_closure =
+let run_closure program =
   let get_constructor = function
     | DDeclaration _ -> ddeclaration
     | DRecursiveDeclaration _ -> drecursivedeclaration
   in
-  let rec helper acc = function
+  let rec helper acc global_scope = function
     | [] -> acc
     | head :: tail ->
       (match head with
        | ( DDeclaration (id, pattern_list, body)
          | DRecursiveDeclaration (id, pattern_list, body) ) as original ->
          let decl = get_constructor original in
-         let body = closure_conversion body in
-         helper (decl id pattern_list body :: acc) tail)
+         let global_scope = Base.Set.add global_scope id in
+         let body = closure_conversion global_scope body in
+         helper (decl id pattern_list body :: acc) global_scope tail)
   in
-  helper []
+  Base.List.rev @@ helper [] (Base.Set.empty (module Base.String)) program
 ;;

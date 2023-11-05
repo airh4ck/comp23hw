@@ -30,7 +30,7 @@ let rec pp_cexpr fmt =
       pp_immexpr
       right
   | CUnaryOperation (unop, imm) ->
-    fprintf fmt "%a%a" Ast.pp_unary_operator unop pp_immexpr imm
+    fprintf fmt "%a%a" Pprintast.pp_unary_operator unop pp_immexpr imm
   | CApplication (fun_imm, arg_imm) ->
     fprintf fmt "%a %a" pp_immexpr fun_imm pp_immexpr arg_imm
   | CList imm_list -> fprintf fmt "[%a]" (fun fmt -> pp_list pp_immexpr fmt "; ") imm_list
@@ -51,7 +51,7 @@ let rec pp_cexpr fmt =
 
 and pp_aexpr fmt = function
   | ALet (id, cexpr, aexpr) ->
-    fprintf fmt "let i%d = %a in\n%a" id pp_cexpr cexpr pp_aexpr aexpr
+    fprintf fmt "let i%d =\n  %a in\n  %a" id pp_cexpr cexpr pp_aexpr aexpr
   | ACExpr cexpr -> pp_cexpr fmt cexpr
 ;;
 
@@ -65,11 +65,11 @@ let pp_global_scope_function fmt =
   function
   | name, arg_list, body ->
     (match arg_list with
-     | [] -> Format.fprintf fmt "let %s = %a\n" name pp_aexpr body
+     | [] -> Format.fprintf fmt "let %s = %a" name pp_aexpr body
      | arg_list ->
        Format.fprintf
          fmt
-         "let %s %a = %a\n"
+         "let %s %a = %a"
          name
          (fun fmt -> pp_args pp_immexpr fmt)
          arg_list

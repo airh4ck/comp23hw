@@ -14,7 +14,7 @@ let print_anf code =
        let closure = run_closure ast in
        let defunced = run_lambda_lifting closure in
        let anf = run_anf_conversion defunced in
-       Base.Map.iter
+       Base.List.iter
          ~f:(fun func -> Format.printf "%a\n" pp_global_scope_function func)
          anf
      | Error err -> print_type_error err)

@@ -1,6 +1,11 @@
 open Anf
 open Format
 
+let pp_id fmt = function
+  | AnfId id -> fprintf fmt "i%d" id
+  | GlobalScopeId id -> fprintf fmt "%s" id
+;;
+
 let pp_immexpr fmt = function
   | ImmInt num -> fprintf fmt "%d" num
   | ImmString str -> fprintf fmt "\"%s\"" str
@@ -8,7 +13,7 @@ let pp_immexpr fmt = function
   | ImmBool boolean -> fprintf fmt (if boolean then "true" else "false")
   | ImmUnit -> fprintf fmt "()"
   (* | ImmWildcard -> fprintf fmt "_" *)
-  | ImmId id -> fprintf fmt "i%d" id
+  | ImmId id -> pp_id fmt id
 ;;
 
 let rec pp_cexpr fmt =
@@ -51,7 +56,7 @@ let rec pp_cexpr fmt =
 
 and pp_aexpr fmt = function
   | ALet (id, cexpr, aexpr) ->
-    fprintf fmt "let i%d =\n  %a in\n  %a" id pp_cexpr cexpr pp_aexpr aexpr
+    fprintf fmt "let %a =\n  %a in\n  %a" pp_id id pp_cexpr cexpr pp_aexpr aexpr
   | ACExpr cexpr -> pp_cexpr fmt cexpr
 ;;
 
@@ -91,9 +96,8 @@ let%expect_test _ =
   |}]
 ;;
 
-(* TODO: need to display id's differently *)
 let%expect_test _ =
-  printf "%a" pp_immexpr @@ ImmId 1;
+  printf "%a" pp_immexpr @@ ImmId (AnfId 1);
   [%expect {|
   i1
   |}]
@@ -116,7 +120,10 @@ let%expect_test _ =
 
 let%expect_test _ =
   printf "%a" pp_aexpr
-  @@ ALet (1, CBinaryOperation (Mul, ImmInt 0, ImmInt 100), ACExpr (CImm (ImmId 1)));
+  @@ ALet
+       ( AnfId 1
+       , CBinaryOperation (Mul, ImmInt 0, ImmInt 100)
+       , ACExpr (CImm (ImmId (AnfId 1))) );
   [%expect {|
   let i1 = 0 * 100 in 
   i1
@@ -126,12 +133,12 @@ let%expect_test _ =
 let%expect_test _ =
   printf "%a" pp_aexpr
   @@ ALet
-       ( 1
+       ( AnfId 1
        , CBinaryOperation (Mul, ImmInt 0, ImmInt 100)
        , ALet
-           ( 2
-           , CBinaryOperation (Sub, ImmId 1, ImmInt 10)
-           , ACExpr (CBinaryOperation (Eq, ImmId 2, ImmId 1)) ) );
+           ( AnfId 2
+           , CBinaryOperation (Sub, ImmId (AnfId 1), ImmInt 10)
+           , ACExpr (CBinaryOperation (Eq, ImmId (AnfId 2), ImmId (AnfId 1))) ) );
   [%expect {|
   let i1 = 0 * 100 in 
   let i2 = i1 - 10 in

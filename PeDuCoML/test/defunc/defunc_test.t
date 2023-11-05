@@ -33,15 +33,6 @@
   let `ll_0 ini acc = ini :: acc
   let `ll_1 head :: tail = tail
   let f ini = (`ll_0 ini) (`ll_1 ([1; 2; 3; 42]))
-$ ./defunc_test.exe <<- EOF
-> let f ini = 
->   let g acc = ini :: acc in
->   let h (head :: tail) = tail in
->   h (h (g []))
-> EOF
-let `ll_0 ini acc = ini :: acc
-let `ll_1 head :: tail = tail
-let f ini = `ll_1 (`ll_1 ((`ll_0 ini) ([])))
   $ ./defunc_test.exe <<- EOF
   > let fib n = 
   >   let rec fibrec n = 

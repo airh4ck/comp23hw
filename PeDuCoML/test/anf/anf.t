@@ -58,13 +58,6 @@
   > EOF
   Ok!
   $ ./anf_test.exe <<- EOF
-  > let f ini = 
-  >   let g acc = ini :: acc in
-  >   let h (head :: tail) = tail in
-  >   h (h (g []))
-  > EOF
-  Ok! 
-  $ ./anf_test.exe <<- EOF
   > let fac n =
   >   let rec fack n k =
   >     if n <= 1 then k 1

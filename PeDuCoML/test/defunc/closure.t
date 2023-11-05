@@ -35,13 +35,6 @@
   >   k (5 + m)
   > EOF
   let a c d = let m  = c + d in let k m l = l + m in (k m) (5 + m)
-$ ./closure_test.exe <<- EOF
-> let f ini = 
->   let g acc = ini :: acc in
->   let h (head :: tail) = tail in
->   h (h (g []))
-> EOF
-let f ini = let g ini acc = ini :: acc in let h head :: tail = tail in h (h ((g ini) ([])))
   $ ./closure_test.exe <<- EOF
   > let fac n =
   >   let rec fack n k =

@@ -154,6 +154,12 @@ let rec rewrite_match expr =
       (rewrite_match body)
   | EMatchWith (matched_expression, first_case, other_cases) ->
     let cases = first_case :: other_cases in
+    let concat_conditions first second =
+      match first, second with
+      | ELiteral (LBool true), second -> second
+      | first, ELiteral (LBool true) -> first
+      | _ -> ebinary_operation AND first second
+    in
     let rec get_match_condition matched_expression = function
       | PLiteral literal -> ebinary_operation Eq matched_expression (eliteral literal)
       | PList pattern_list ->
@@ -174,7 +180,7 @@ let rec rewrite_match expr =
               let pattern_condition =
                 get_match_condition (rt_at_list matched_expression ind) pattern
               in
-              ebinary_operation AND cond pattern_condition, ind + 1)
+              concat_conditions cond pattern_condition, ind + 1)
         in
         partial_condition (fst elems_condition)
       | PTuple (first_pattern, second_pattern, pattern_list) ->
@@ -187,7 +193,7 @@ let rec rewrite_match expr =
               let pattern_condition =
                 get_match_condition (rt_at_tuple matched_expression ind) pattern
               in
-              ebinary_operation AND cond pattern_condition, ind + 1)
+              concat_conditions cond pattern_condition, ind + 1)
         in
         fst elems_condition
       | PConstructList (head_pattern, tail_pattern) ->
@@ -202,7 +208,7 @@ let rec rewrite_match expr =
         let tail_condition =
           get_match_condition (rt_tail matched_expression) tail_pattern
         in
-        partial_condition @@ ebinary_operation AND head_condition tail_condition
+        partial_condition @@ concat_conditions head_condition tail_condition
       | _ -> eliteral @@ lbool true
     in
     let rec rewrite_pattern matched pattern action =

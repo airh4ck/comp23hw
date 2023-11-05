@@ -1,6 +1,8 @@
 open Ast
 
-type unique_id = int [@@deriving eq, show { with_path = false }]
+type unique_id =
+  | AnfId of int
+  | GlobalScopeId of string
 
 type imm_expr =
   | ImmInt of int
@@ -27,6 +29,10 @@ and aexpr =
 type global_scope_function = string * imm_expr list * aexpr
 
 (* Smart constructors *)
+(* unique_id *)
+let anf_id n = AnfId n
+let global_scope_id name = GlobalScopeId name
+
 (* imm_expr *)
 let imm_int num = ImmInt num
 let imm_string str = ImmString str
@@ -87,14 +93,14 @@ end
 open State
 
 (* Runtime fuctions (unavailable to users)
-   | name        | args         | id   |
-   -------------------------------------
-   | `head       | list         | -1   |
-   | `tail       | list         | -2   |
-   | `length     | list         | -3   |
-   | `at_list    | list index   | -4   |
-   | `at_tuple   | tuple index  | -5   |
-   -------------------------------------*)
+   | name        | args         |
+   ------------------------------
+   | `head       | list         |
+   | `tail       | list         |
+   | `length     | list         |
+   | `at_list    | list index   |
+   | `at_tuple   | tuple index  |
+   ------------------------------*)
 
 let rec rewrite_match expr =
   let rt_head = eapplication (eidentifier "`head") in
@@ -257,7 +263,6 @@ let rec rewrite_match expr =
 let rec anf (env : (string, unique_id, Base.String.comparator_witness) Base.Map.t) expr k
   : aexpr State.t
   =
-  (* Format.printf "Translating expr: %a\n" Pprintast.pp_expression expr; *)
   let expr = rewrite_match expr in
   match expr with
   | ELiteral literal ->
@@ -270,81 +275,85 @@ let rec anf (env : (string, unique_id, Base.String.comparator_witness) Base.Map.
   | EIdentifier x -> k @@ imm_id (Base.Map.find_exn env x)
   | EBinaryOperation (bop, left, right) ->
     let* fresh_var = fresh in
-    let* body = k @@ imm_id fresh_var in
+    let* body = k @@ imm_id (anf_id fresh_var) in
     anf env left (fun limm ->
       anf env right (fun rimm ->
-        return @@ alet fresh_var (cbinary_operation bop limm rimm) body))
+        return @@ alet (anf_id fresh_var) (cbinary_operation bop limm rimm) body))
   | EUnaryOperation (uop, expr) ->
     let* fresh_var = fresh in
-    let* body = k @@ imm_id fresh_var in
-    anf env expr (fun imm -> return @@ alet fresh_var (cunary_operation uop imm) body)
+    let* body = k @@ imm_id (anf_id fresh_var) in
+    anf env expr (fun imm ->
+      return @@ alet (anf_id fresh_var) (cunary_operation uop imm) body)
   | EApplication (fun_expr, arg_expr) ->
     let* fresh_var = fresh in
-    let* body = k @@ imm_id fresh_var in
+    let* body = k @@ imm_id (anf_id fresh_var) in
     anf env fun_expr (fun imm_fun_expr ->
       anf env arg_expr (fun imm_arg_expr ->
-        return @@ alet fresh_var (capplication imm_fun_expr imm_arg_expr) body))
+        return @@ alet (anf_id fresh_var) (capplication imm_fun_expr imm_arg_expr) body))
   | EList expr_list ->
     let* fresh_var = fresh in
-    let* body = k @@ imm_id fresh_var in
+    let* body = k @@ imm_id (anf_id fresh_var) in
     let rec helper curr_list = function
       | head :: tail -> anf env head (fun imm -> helper (imm :: curr_list) tail)
-      | _ -> return @@ alet fresh_var (clist @@ Base.List.rev curr_list) body
+      | _ -> return @@ alet (anf_id fresh_var) (clist @@ Base.List.rev curr_list) body
     in
     helper [] expr_list
   | ETuple (first_elem, second_elem, other_elems) ->
     let all_elems = first_elem :: second_elem :: other_elems in
     let* fresh_var = fresh in
-    let* body = k @@ imm_id fresh_var in
+    let* body = k @@ imm_id (anf_id fresh_var) in
     let rec helper curr_list = function
       | head :: tail -> anf env head (fun imm -> helper (imm :: curr_list) tail)
-      | _ -> return @@ alet fresh_var (ctuple @@ Base.List.rev curr_list) body
+      | _ -> return @@ alet (anf_id fresh_var) (ctuple @@ Base.List.rev curr_list) body
     in
     helper [] all_elems
   | EIf (condition, true_branch, false_branch) ->
     let* fresh_var = fresh in
-    let* body = k @@ imm_id fresh_var in
+    let* body = k @@ imm_id (anf_id fresh_var) in
     anf env condition (fun condition_imm ->
       anf env true_branch (fun true_branch_imm ->
         anf env false_branch (fun false_branch_imm ->
           return
-          @@ alet fresh_var (cif condition_imm true_branch_imm false_branch_imm) body)))
+          @@ alet
+               (anf_id fresh_var)
+               (cif condition_imm true_branch_imm false_branch_imm)
+               body)))
   | EConstructList (operand, expr_list) ->
     let* fresh_var = fresh in
-    let* body = k @@ imm_id fresh_var in
+    let* body = k @@ imm_id (anf_id fresh_var) in
     anf env operand (fun operand_imm ->
       anf env expr_list (fun expr_list_imm ->
-        return @@ alet fresh_var (cconstruct_list operand_imm expr_list_imm) body))
+        return @@ alet (anf_id fresh_var) (cconstruct_list operand_imm expr_list_imm) body))
   | ELetIn (first_declaration, other_declarations, body) ->
     let* fresh_var = fresh in
     (match first_declaration with
      | DDeclaration (name, pattern_list, expr) ->
        if Base.List.length pattern_list = 0
        then (
-         let new_env = Base.Map.set env ~key:name ~data:fresh_var in
+         let new_env = Base.Map.set env ~key:name ~data:(anf_id fresh_var) in
          anf env expr (fun imm_expr ->
            match other_declarations with
            | head :: tail ->
              let* body = anf new_env (eletin head tail body) k in
-             return @@ alet fresh_var (cimm imm_expr) body
+             return @@ alet (anf_id fresh_var) (cimm imm_expr) body
            | _ ->
              let* body = anf new_env body k in
-             return @@ alet fresh_var (cimm imm_expr) body))
+             return @@ alet (anf_id fresh_var) (cimm imm_expr) body))
        else
          failwith
            "AST to ANF convertion error: internal let-expressions must not have any args."
      | DRecursiveDeclaration (name, pattern_list, expr) ->
        if Base.List.length pattern_list = 0
        then (
-         let env = Base.Map.set env ~key:name ~data:fresh_var in
+         let env = Base.Map.set env ~key:name ~data:(anf_id fresh_var) in
          anf env expr (fun imm_expr ->
            match other_declarations with
            | head :: tail ->
              let* body = anf env (eletin head tail body) k in
-             return @@ alet fresh_var (cimm imm_expr) body
+             return @@ alet (anf_id fresh_var) (cimm imm_expr) body
            | _ ->
              let* body = anf env body k in
-             return @@ alet fresh_var (cimm imm_expr) body))
+             return @@ alet (anf_id fresh_var) (cimm imm_expr) body))
        else
          failwith
            "AST to ANF convertion error: internal let-expressions must not have any args.")
@@ -361,19 +370,22 @@ let rec anf (env : (string, unique_id, Base.String.comparator_witness) Base.Map.
 let process_declaration env declaration =
   let rec helper current_expr current_arg_number args_list = function
     | head :: tail ->
-      let arg_name = "``" ^ string_of_int current_arg_number in
-      helper
-        (ematchwith (eidentifier arg_name) (head, current_expr) [])
-        (current_arg_number + 1)
-        (arg_name :: args_list)
-        tail
+      (match head with
+       | PIdentifier id -> helper current_expr current_arg_number (id :: args_list) tail
+       | _ ->
+         let arg_name = "``" ^ string_of_int current_arg_number in
+         helper
+           (ematchwith (eidentifier arg_name) (head, current_expr) [])
+           (current_arg_number + 1)
+           (arg_name :: args_list)
+           tail)
     | _ -> args_list, current_expr
   in
   let update_map env args_list =
     Base.List.fold_right args_list ~init:(return env) ~f:(fun id acc ->
       let* fresh_var = fresh in
       let* acc = acc in
-      return @@ Base.Map.set acc ~key:id ~data:fresh_var)
+      return @@ Base.Map.set acc ~key:id ~data:(anf_id fresh_var))
   in
   let gen_imm_id env name = imm_id @@ Base.Map.find_exn env name in
   let gen_global_scope_function env name pattern_list expr =
@@ -382,39 +394,33 @@ let process_declaration env declaration =
     let* anf_representation = anf env expr (fun imm -> return @@ acimm imm) in
     return (name, List.map (gen_imm_id env) args_list, anf_representation)
   in
-  let* fresh_var = fresh in
   match declaration with
   | DDeclaration (name, pattern_list, expr) ->
     let* global_scope_f = gen_global_scope_function env name pattern_list expr in
-    return (global_scope_f, fresh_var)
+    return global_scope_f
   | DRecursiveDeclaration (name, pattern_list, expr) ->
-    let env = Base.Map.set env ~key:name ~data:fresh_var in
+    let env = Base.Map.set env ~key:name ~data:(global_scope_id name) in
     let* global_scope_f = gen_global_scope_function env name pattern_list expr in
-    return (global_scope_f, fresh_var)
+    return global_scope_f
 ;;
 
-let anf_conversion (program : declaration list)
-  : (string, global_scope_function, Base.String.comparator_witness) Base.Map.t State.t
-  =
-  let rec helper env current_map = function
+let anf_conversion (program : declaration list) : global_scope_function list State.t =
+  let rec helper env current_list = function
     | head :: tail ->
-      let* ((name, _, _) as global_scope_f), fresh_var = process_declaration env head in
-      let env = Base.Map.set env ~key:name ~data:fresh_var in
-      let current_map = Base.Map.set current_map ~key:name ~data:global_scope_f in
-      helper env current_map tail
-    | _ -> return @@ current_map
+      let* ((name, _, _) as global_scope_f) = process_declaration env head in
+      let env = Base.Map.set env ~key:name ~data:(global_scope_id name) in
+      helper env (global_scope_f :: current_list) tail
+    | _ -> return @@ current_list
   in
   let env = Base.Map.empty (module Base.String) in
-  let env = Base.Map.set env ~key:"`head" ~data:(-1) in
-  let env = Base.Map.set env ~key:"`tail" ~data:(-2) in
-  let env = Base.Map.set env ~key:"`length" ~data:(-3) in
-  let env = Base.Map.set env ~key:"`at_list" ~data:(-4) in
-  let env = Base.Map.set env ~key:"`at_tuple" ~data:(-5) in
-  helper env (Base.Map.empty (module Base.String)) program
+  let env = Base.Map.set env ~key:"`head" ~data:(global_scope_id "`head") in
+  let env = Base.Map.set env ~key:"`tail" ~data:(global_scope_id "`tail") in
+  let env = Base.Map.set env ~key:"`length" ~data:(global_scope_id "`length") in
+  let env = Base.Map.set env ~key:"`at_list" ~data:(global_scope_id "`at_list") in
+  let env = Base.Map.set env ~key:"`at_tuple" ~data:(global_scope_id "`at_tuple") in
+  helper env [] program
 ;;
 
-let run_anf_conversion program
-  : (string, global_scope_function, Base.String.comparator_witness) Base.Map.t
-  =
+let run_anf_conversion program : global_scope_function list =
   run @@ anf_conversion program
 ;;

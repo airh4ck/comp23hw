@@ -4,6 +4,8 @@ open PeDuCoML.Closure_conversion
 open PeDuCoML.Lambda_lift
 open PeDuCoML.Ast
 
+let debug = true
+
 type func =
   | FFun of expression
   | FLet of declaration
@@ -71,9 +73,12 @@ let print_anf code =
   | Ok ast ->
     let closure = run_closure ast in
     let defunced = run_lambda_lifting closure in
-    (match check_nested_functions defunced with
-     | [] -> Format.printf "Ok!\n"
-     | failed -> List.iter (fun func -> Format.printf "%a\n" pp_func func) failed)
+    if debug
+    then List.iter (fun decl -> Format.printf "%a\n" pp_declaration decl) defunced
+    else (
+      match check_nested_functions defunced with
+      | [] -> Format.printf "Ok!\n"
+      | failed -> List.iter (fun func -> Format.printf "%a\n" pp_func func) failed)
   | Error err -> Format.printf "%s\n" err
 ;;
 

@@ -6,6 +6,8 @@ open PeDuCoML.Util
 open PeDuCoML.Inferencer
 open PeDuCoML.Typing
 
+let debug = true
+
 type func =
   | FFun of expression
   | FLet of declaration
@@ -97,9 +99,12 @@ let print_anf code =
     (match R.run (check_types ast) with
      | Ok _ ->
        let closure = run_closure ast in
-       (match check_closures closure with
-        | [] -> Format.printf "Ok!\n"
-        | failed -> List.iter (fun func -> Format.printf "%a\n" pp_func func) failed)
+       if debug
+       then List.iter (fun decl -> Format.printf "%a\n" pp_declaration decl) closure
+       else (
+         match check_closures closure with
+         | [] -> Format.printf "Ok!\n"
+         | failed -> List.iter (fun func -> Format.printf "%a\n" pp_func func) failed)
      | Error err -> print_type_error err)
   | Error err -> Format.printf "%s\n" err
 ;;

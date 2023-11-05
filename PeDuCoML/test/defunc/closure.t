@@ -35,13 +35,13 @@
   >   k (5 + m)
   > EOF
   let a c d = let m  = c + d in let k m l = l + m in (k m) (5 + m)
-  $ ./closure_test.exe <<- EOF
-  > let f ini = 
-  >   let g acc = ini :: acc in
-  >   let h (head :: tail) = tail in
-  >   h (h (g []))
-  > EOF
-  let f ini = let g ini acc = ini :: acc in let h head :: tail = tail in h (h ((g ini) ([])))
+$ ./closure_test.exe <<- EOF
+> let f ini = 
+>   let g acc = ini :: acc in
+>   let h (head :: tail) = tail in
+>   h (h (g []))
+> EOF
+let f ini = let g ini acc = ini :: acc in let h head :: tail = tail in h (h ((g ini) ([])))
   $ ./closure_test.exe <<- EOF
   > let fac n =
   >   let rec fack n k =
@@ -132,3 +132,5 @@
   > 
   > let main = count_solutions_of_sq_equation 2 9 4
   > EOF
+  let count_solutions_of_sq_equation a b c = let sq x = x * x in let d  = (sq b) - ((4 * a) * c) in if d > 0 then 2 else if d = 0 then 1 else 0
+  let main  = ((count_solutions_of_sq_equation 2) 9) 4

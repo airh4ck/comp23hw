@@ -17,7 +17,6 @@
   >   (42 + add_k 42 (-42))
   > EOF
   let `ll_0 k x y = (x + y) * k
-  let `ll_1  = ()
   let main k = 42 + (((`ll_0 k) 42) (-42))
   $ ./defunc_test.exe <<- EOF
   > let main k = 
@@ -34,23 +33,23 @@
   let `ll_0 ini acc = ini :: acc
   let `ll_1 head :: tail = tail
   let f ini = (`ll_0 ini) (`ll_1 ([1; 2; 3; 42]))
-  $ ./defunc_test.exe <<- EOF
-  > let f ini = 
-  >   let g acc = ini :: acc in
-  >   let h (head :: tail) = tail in
-  >   h (h (g []))
-  > EOF
-  let `ll_0 ini acc = ini :: acc
-  let `ll_1 head :: tail = tail
-  let f ini = `ll_1 (`ll_1 ((`ll_0 ini) ([])))
+$ ./defunc_test.exe <<- EOF
+> let f ini = 
+>   let g acc = ini :: acc in
+>   let h (head :: tail) = tail in
+>   h (h (g []))
+> EOF
+let `ll_0 ini acc = ini :: acc
+let `ll_1 head :: tail = tail
+let f ini = `ll_1 (`ll_1 ((`ll_0 ini) ([])))
   $ ./defunc_test.exe <<- EOF
   > let fib n = 
-  >   let rec fibrec = 
+  >   let rec fibrec n = 
   >     if n = 0 then 1
   >     else (fibrec (n - 1)) + (fibrec (n - 2))
   >   in fibrec n
   > EOF
-  let rec `ll_0  = if n = 0 then 1 else (`ll_0 (n - 1)) + (`ll_0 (n - 2))
+  let rec `ll_0 n = if n = 0 then 1 else (`ll_0 (n - 1)) + (`ll_0 (n - 2))
   let fib n = `ll_0 n
   $ ./defunc_test.exe <<- EOF
   > let fac n =
@@ -99,59 +98,82 @@
   > 
   > let main = count_solutions_of_sq_equation 2 9 4
   > EOF
-$ ./defunc_test.exe <<- EOF
-> let main x = 
->   fun z ->
->   match z with
->   | y -> x
-> EOF
-Ok!
-$ ./defunc_test.exe <<-EOF
-> let rec factorial n = if n <= 1 then 1 else n * factorial (n - 1)
-> let main = factorial 6
-> EOF
-Ok!
-$ ./defunc_test.exe <<-EOF
-> let rec map f list = match list with
->   | head :: tail -> f head :: map f tail
->   | _ -> []
-> 
-> let tuple_map f tuple = match tuple with
->   | (x, y) -> (f x, f y)
-> 
-> let main = map (tuple_map (fun x -> x * 2)) [(1, 2); (5, 6)]
-> EOF
-Ok!
-$ ./defunc_test.exe <<- EOF
-> let add_cps x y = fun k -> k (x + y)
-> let square_cps x = fun k -> k (x * x)
-> let pythagoras_cps x y = fun k ->
->   square_cps x (fun x_squared ->
->     square_cps y (fun y_squared ->
->       add_cps x_squared y_squared k))
-> EOF
-Ok!
-$ ./defunc_test.exe <<- EOF
-> let thrice_cps f_cps x = fun k ->
->   f_cps x (fun fx ->
->     f_cps fx (fun ffx ->
->       f_cps ffx k))
-> EOF
-Ok!
-$ ./defunc_test.exe <<- EOF
-> let main k i = 
->   match (fun x y -> x + k) with
->   | f ->
->     let id = fun x -> x in
->     f i
-> EOF
-Ok!
-$ ./defunc_test.exe <<- EOF
-> let phi n = 
->   let rec helper last1 last2 n = 
->     if n > 0 then helper last2 (last1 + last2) (n - 1) 
->     else last2 
->   in helper 1 1 (n - 2)
-> 
-> let main = phi 10
-> EOF
+  let `ll_0 x = x * x
+  let count_solutions_of_sq_equation a b c = if d > 0 then 2 else if d = 0 then 1 else 0
+  let main  = ((count_solutions_of_sq_equation 2) 9) 4
+  $ ./defunc_test.exe <<- EOF
+  > let main x = 
+  >   fun z ->
+  >   match z with
+  >   | y -> x
+  > EOF
+  let `ll_0 x z = match z with | y -> x
+  let main x = `ll_0 x
+  $ ./defunc_test.exe <<-EOF
+  > let rec factorial n = if n <= 1 then 1 else n * factorial (n - 1)
+  > let main = factorial 6
+  > EOF
+  let rec factorial n = if n ≤ 1 then 1 else n * (factorial (n - 1))
+  let main  = factorial 6
+  $ ./defunc_test.exe <<-EOF
+  > let rec map f list = match list with
+  >   | head :: tail -> f head :: map f tail
+  >   | _ -> []
+  > 
+  > let tuple_map f tuple = match tuple with
+  >   | (x, y) -> (f x, f y)
+  > 
+  > let main = map (tuple_map (fun x -> x * 2)) [(1, 2); (5, 6)]
+  > EOF
+  let rec map f list = match list with | head :: tail -> (f head) :: ((map f) tail) | _ -> []
+  let tuple_map f tuple = match tuple with | x, y -> f x, f y
+  let `ll_0 x = x * 2
+  let main  = (map (tuple_map `ll_0)) ([1, 2; 5, 6])
+  $ ./defunc_test.exe <<- EOF
+  > let add_cps x y = fun k -> k (x + y)
+  > let square_cps x = fun k -> k (x * x)
+  > let pythagoras_cps x y = fun k ->
+  >   square_cps x (fun x_squared ->
+  >     square_cps y (fun y_squared ->
+  >       add_cps x_squared y_squared k))
+  > EOF
+  let `ll_0 y x k = k (x + y)
+  let add_cps x y = (`ll_0 y) x
+  let `ll_1 x k = k (x * x)
+  let square_cps x = `ll_1 x
+  let `ll_4 x_squared k y_squared = ((add_cps x_squared) y_squared) k
+  let `ll_3 y k x_squared = (square_cps y) ((`ll_4 x_squared) k)
+  let `ll_2 y x k = (square_cps x) ((`ll_3 y) k)
+  let pythagoras_cps x y = (`ll_2 y) x
+  $ ./defunc_test.exe <<- EOF
+  > let thrice_cps f_cps x = fun k ->
+  >   f_cps x (fun fx ->
+  >     f_cps fx (fun ffx ->
+  >       f_cps ffx k))
+  > EOF
+  let `ll_2 k f_cps ffx = (f_cps ffx) k
+  let `ll_1 k f_cps fx = (f_cps fx) ((`ll_2 k) f_cps)
+  let `ll_0 x f_cps k = (f_cps x) ((`ll_1 k) f_cps)
+  let thrice_cps f_cps x = (`ll_0 x) f_cps
+  $ ./defunc_test.exe <<- EOF
+  > let main k i = 
+  >   match (fun x y -> x + k) with
+  >   | f ->
+  >     let id = fun x -> x in
+  >     f i
+  > EOF
+  let `ll_0 k x y = x + k
+  let `ll_1 x = x
+  let main k i = match `ll_0 k with | f -> f i
+  $ ./defunc_test.exe <<- EOF
+  > let phi n = 
+  >   let rec helper last1 last2 n = 
+  >     if n > 0 then helper last2 (last1 + last2) (n - 1) 
+  >     else last2 
+  >   in helper 1 1 (n - 2)
+  > 
+  > let main = phi 10
+  > EOF
+  let rec `ll_0 last1 last2 n = if n > 0 then ((`ll_0 last2) (last1 + last2)) (n - 1) else last2
+  let phi n = ((`ll_0 1) 1) (n - 2)
+  let main  = phi 10

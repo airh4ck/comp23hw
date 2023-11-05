@@ -110,7 +110,7 @@ let lambda_lift =
          let* body, lifted_decls = ll_expr body in
          let decl = get_constructor original in
          let* tail = ll_program tail in
-         return @@ lifted_decls @ [ decl name pattern_list body ] @ tail)
+         return @@ (lifted_decls |> List.rev) @ [ decl name pattern_list body ] @ tail)
   in
   ll_program
 ;;

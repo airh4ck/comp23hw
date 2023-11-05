@@ -55,16 +55,27 @@ and pp_aexpr fmt = function
   | ACExpr cexpr -> pp_cexpr fmt cexpr
 ;;
 
-(* let pp_global_scope_function =
-   let id = ref 0 in
-   let rec helper fmt = function
-   | FunctionNoArgs aexpr -> Format.fprintf fmt "%a\n" pp_aexpr aexpr
-   | FunctionWithArgs func ->
-   Format.fprintf fmt "%a\n" helper (func (imm_id !id));
-   id := !id + 1
-   in
-   helper
-   ;; *)
+let pp_global_scope_function fmt =
+  let pp_args pp fmt =
+    pp_print_list
+      ~pp_sep:(fun fmt _ -> fprintf fmt " ")
+      (fun fmt value -> pp fmt value)
+      fmt
+  in
+  function
+  | name, arg_list, body ->
+    (match arg_list with
+     | [] -> Format.fprintf fmt "let %s = %a\n" name pp_aexpr body
+     | arg_list ->
+       Format.fprintf
+         fmt
+         "let %s %a = %a\n"
+         name
+         (fun fmt -> pp_args pp_immexpr fmt)
+         arg_list
+         pp_aexpr
+         body)
+;;
 
 let%expect_test _ =
   printf "%a" pp_immexpr @@ ImmInt 2;

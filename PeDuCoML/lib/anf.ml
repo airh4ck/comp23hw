@@ -213,7 +213,7 @@ let rec rewrite_match expr =
     in
     let rec rewrite_pattern matched pattern action =
       match pattern with
-      | PIdentifier id -> eletin (ddeclaration id [] matched) [] action
+      | PIdentifier id -> eletin (ddeclaration id [] matched) [] (rewrite_match action)
       | PTuple (first_elem, second_elem, other_elems) ->
         let elem_list = first_elem :: second_elem :: other_elems in
         let rewritten, _ =
@@ -230,7 +230,7 @@ let rec rewrite_match expr =
       | PConstructList (head, tail) ->
         rewrite_pattern (rt_head matched) head
         @@ rewrite_pattern (rt_tail matched) tail action
-      | _ -> action
+      | _ -> rewrite_match action
     in
     let rec gen_conditions k cases =
       let pattern, action = Base.List.hd_exn cases in
@@ -257,6 +257,7 @@ let rec rewrite_match expr =
 let rec anf (env : (string, unique_id, Base.String.comparator_witness) Base.Map.t) expr k
   : aexpr State.t
   =
+  (* Format.printf "Translating expr: %a\n" Pprintast.pp_expression expr; *)
   let expr = rewrite_match expr in
   match expr with
   | ELiteral literal ->

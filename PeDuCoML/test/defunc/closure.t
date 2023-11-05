@@ -1,4 +1,4 @@
-  $ ./closure_test.exe <<- EOF
+  $ ./closure_test.exe debug <<- EOF
   > let main = fun x -> x
   > EOF
   Ok!

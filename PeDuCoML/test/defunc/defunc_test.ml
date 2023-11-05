@@ -4,8 +4,6 @@ open PeDuCoML.Closure_conversion
 open PeDuCoML.Lambda_lift
 open PeDuCoML.Ast
 
-let debug = true
-
 type func =
   | FFun of expression
   | FLet of declaration
@@ -68,7 +66,7 @@ let pp_func fmt = function
   | FLet decl -> pp_declaration fmt decl
 ;;
 
-let print_anf code =
+let print_anf code debug =
   match parse code with
   | Ok ast ->
     let closure = run_closure ast in
@@ -84,5 +82,6 @@ let print_anf code =
 
 let _ =
   let code = Stdio.In_channel.input_all Caml.stdin in
-  print_anf code
+  let debug = Array.length Sys.argv > 1 && Sys.argv.(1) = "debug" in
+  print_anf code debug
 ;;

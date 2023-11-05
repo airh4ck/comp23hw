@@ -9,12 +9,20 @@ let lambda_lift =
   let ll_expr expr =
     let rec ll_decl env lifted_decls = function
       | ( DDeclaration (name, pattern_list, body)
-        | DRecursiveDeclaration (name, pattern_list, body) ) as original ->
-        let* body, lifted = ll_expr env lifted_decls body in
+        | DRecursiveDeclaration (name, pattern_list, body) ) as original
+        when Base.List.length pattern_list > 0 ->
         let decl = get_constructor original in
         let* fresh_var = fresh in
         let fresh_name = "`ll_" ^ Base.Int.to_string fresh_var in
+        let env = Base.Map.set env ~key:name ~data:fresh_name in
+        let* body, lifted = ll_expr env lifted_decls body in
         return @@ (name, fresh_name, decl fresh_name pattern_list body, lifted)
+      | (DDeclaration (name, _, body) | DRecursiveDeclaration (name, _, body)) as original
+        ->
+        (* TODO: need to not lift in this case *)
+        let* body, lifted = ll_expr env lifted_decls body in
+        let decl = get_constructor original in
+        return @@ (name, name, decl name [] body, lifted)
     and ll_expr env lifted_decls = function
       | EFun (first_arg, other_args, body) ->
         let* fresh_var = fresh in
@@ -24,14 +32,15 @@ let lambda_lift =
         @@ (eidentifier id, ddeclaration id (first_arg :: other_args) body :: lifted)
       | ELetIn (first_decl, other_decls, body) ->
         let* old_name, fresh_name, first, lifted = ll_decl env lifted_decls first_decl in
-        let lifted = first :: lifted in
+        let lifted = if old_name = fresh_name then lifted else first :: lifted in
         let* env, lifted =
           Base.List.fold_right
             other_decls
             ~f:(fun decl acc ->
               let* env, lifted = acc in
               let* old_name, fresh_name, decl, lifted = ll_decl env lifted decl in
-              return @@ (Base.Map.set env ~key:old_name ~data:fresh_name, decl :: lifted))
+              let lifted = if old_name = fresh_name then lifted else decl :: lifted in
+              return @@ (Base.Map.set env ~key:old_name ~data:fresh_name, lifted))
             ~init:(return (Base.Map.set env ~key:old_name ~data:fresh_name, lifted))
         in
         let* body, lifted = ll_expr env lifted body in
@@ -110,9 +119,9 @@ let lambda_lift =
          let* body, lifted_decls = ll_expr body in
          let decl = get_constructor original in
          let* tail = ll_program tail in
-         return @@ (lifted_decls |> List.rev) @ [ decl name pattern_list body ] @ tail)
+         return @@ tail @ (decl name pattern_list body :: lifted_decls))
   in
   ll_program
 ;;
 
-let run_lambda_lifting program = run (lambda_lift program)
+let run_lambda_lifting program = List.rev @@ run (lambda_lift program)

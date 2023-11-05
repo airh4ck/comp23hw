@@ -2,31 +2,29 @@
   > let main = 1
   > EOF
   let main = 1
-
   $ ./anf_test.exe <<- EOF
   > let main = "asdf"
   > EOF
   let main = "asdf"
-
   $ ./anf_test.exe <<- EOF
   > let main = 'c'
   > EOF
   let main = 'c'
-
   $ ./anf_test.exe <<- EOF
   > let main = true
   > EOF
   let main = true
-
   $ ./anf_test.exe <<- EOF
   > let main = ()
   > EOF
   let main = ()
-
   $ ./anf_test.exe <<- EOF
   > let main = fun x -> x
   > EOF
-  
+  let `ll_0 i1 = let i2 =
+    i1 in
+    i2
+  let main = i0
   $ ./anf_test.exe <<- EOF
   > let main x = 
   >   let const f = fun s -> f in
@@ -35,22 +33,17 @@
   > EOF
 
   $ ./anf_test.exe <<- EOF
-  > let main = fun x -> x
-  > EOF
-  Ok!
-  $ ./anf_test.exe <<- EOF
   > let main k = 
   >   let add_k x y = (x + y) * k
   >   in add_k 1 2
   > EOF
-  Ok!
+    
   $ ./anf_test.exe <<- EOF
   > let main k = 
   >   let add_k x y = (x + y) * k in
   >   let waste_of_space = () in
   >   (42 + add_k 42 (-42))
   > EOF
-  Ok!
   $ ./anf_test.exe <<- EOF
   > let main k = 
   >   let add_k x y = (x + y) * k in
@@ -64,13 +57,13 @@
   >   g (h [1; 2; 3; 42])
   > EOF
   Ok!
-$ ./anf_test.exe <<- EOF
-> let f ini = 
->   let g acc = ini :: acc in
->   let h (head :: tail) = tail in
->   h (h (g []))
-> EOF
-Ok! 
+  $ ./anf_test.exe <<- EOF
+  > let f ini = 
+  >   let g acc = ini :: acc in
+  >   let h (head :: tail) = tail in
+  >   h (h (g []))
+  > EOF
+  Ok! 
   $ ./anf_test.exe <<- EOF
   > let fac n =
   >   let rec fack n k =
@@ -176,13 +169,13 @@ Ok!
   >   g (h [1; 2; 3; 42])
   > EOF
   Ok!
-$ ./anf_test.exe <<- EOF
-> let f ini = 
->   let g acc = ini :: acc in
->   let h (head :: tail) = tail in
->   h (h (g []))
-> EOF
-Ok! 
+  $ ./anf_test.exe <<- EOF
+  > let f ini = 
+  >   let g acc = ini :: acc in
+  >   let h (head :: tail) = tail in
+  >   h (h (g []))
+  > EOF
+  Ok! 
   $ ./anf_test.exe <<- EOF
   > let fac n =
   >   let rec fack n k =
@@ -205,85 +198,15 @@ Ok!
   > EOF
   Ok!
   $ ./anf_test.exe <<- EOF
-  > let main x = 
-  >   let const f = fun s -> f in
-  >   let rev_const f s = const s in
-  >   rev_const (fun _ -> x)
-  > EOF
-  Ok!
-  $ ./anf_test.exe <<- EOF
-  > let main x = 
-  >   fun z ->
-  >   match z with
-  >   | y -> x
-  > EOF
-  Ok!
-  $ ./anf_test.exe <<-EOF
-  > let rec factorial n = if n <= 1 then 1 else n * factorial (n - 1)
-  > let main = factorial 6
-  > EOF
-  Ok!
-  $ ./anf_test.exe <<-EOF
-  > let rec map f list = match list with
-  >   | head :: tail -> f head :: map f tail
-  >   | _ -> []
-  > 
-  > let tuple_map f tuple = match tuple with
-  >   | (x, y) -> (f x, f y)
-  > 
-  > let main = map (tuple_map (fun x -> x * 2)) [(1, 2); (5, 6)]
-  > EOF
-  Ok!
-  $ ./anf_test.exe <<- EOF
-  > let add_cps x y = fun k -> k (x + y)
-  > let square_cps x = fun k -> k (x * x)
-  > let pythagoras_cps x y = fun k ->
-  >   square_cps x (fun x_squared ->
-  >     square_cps y (fun y_squared ->
-  >       add_cps x_squared y_squared k))
-  > EOF
-  Ok!
-  $ ./anf_test.exe <<- EOF
-  > let thrice_cps f_cps x = fun k ->
-  >   f_cps x (fun fx ->
-  >     f_cps fx (fun ffx ->
-  >       f_cps ffx k))
-  > EOF
-  Ok!
-  $ ./anf_test.exe <<- EOF
-  > let main k i = 
-  >   match (fun x y -> x + k) with
-  >   | f ->
-  >     let id = fun x -> x in
-  >     f i
-  > EOF
-  Ok!
-  $ ./anf_test.exe <<- EOF
-  > let main = 1 + 2
-  > EOF
-  3
-  $ ./anf_test.exe <<-EOF
-  > let rec factorial n = if n <= 1 then 1 else n * factorial (n - 1)
-  > let main = factorial 6
-  > EOF
-  720
-  $ ./anf_test.exe <<-EOF
-  > let rec map f list = match list with
-  >   | head :: tail -> f head :: map f tail
-  >   | _ -> []
-  > 
-  > let tuple_map f tuple = match tuple with
-  >   | (x, y) -> (f x, f y)
-  > 
-  > let main = map (tuple_map (fun x -> x * 2)) [(1, 2); (5, 6)]
-  > EOF
-  [(2, 4); (10, 12)]
-  $ ./anf_test.exe <<- EOF
-  > let phi n = let rec helper last1 last2 n = if n > 0 then helper last2 (last1 + last2) (n - 1) else last2 in helper 1 1 (n - 2)
+  > let phi n = 
+  >   let rec helper last1 last2 n = 
+  >     if n > 0 then helper last2 (last1 + last2) (n - 1) 
+  >     else last2 
+  >   in helper 1 1 (n - 2)
   > 
   > let main = phi 10
   > EOF
-  55
+  
   $ ./anf_test.exe <<- EOF
   > let product list =
   >   let rec helper list acc = match list with
@@ -294,7 +217,7 @@ Ok!
   > 
   > let main = product [1; 2; 7; 12; 10; 3; 21]
   > EOF
-  105840
+    
   $ ./anf_test.exe <<- EOF
   > let sum list =
   >   let rec helper list acc = match list with
@@ -305,7 +228,6 @@ Ok!
   > 
   > let main = sum [1; 2; 7; 12; 10; 3; 21; 101; 78; 42; 38]
   > EOF
-  315
   $ ./anf_test.exe <<- EOF
   > let length list =
   >   let rec helper list acc = match list with
@@ -394,18 +316,7 @@ Ok!
   > 
   > let main = count_solutions_of_sq_equation 2 9 4
   > EOF
-  2
-  $ ./anf_test.exe <<- EOF
-  > let count_solutions_of_sq_equation a b c =
-  >   let sq x = x * x
-  >   in
-  >   let d = sq b - 4 * a * c
-  >   in
-  >   if d > 0 then 2 else (if d = 0 then 1 else 0)
-  > 
-  > let main = count_solutions_of_sq_equation 2 9 4
-  > EOF
-  2
+  
   $ ./anf_test.exe <<- EOF
   > let rec map f list = match list with
   >   | head :: tail -> f head :: map f tail

@@ -122,3 +122,13 @@
   >     f i
   > EOF
   let main k i = match (fun k x y -> x + k) k with | f -> let id  = fun x -> x in f i
+  $ ./closure_test.exe <<- EOF
+  > let count_solutions_of_sq_equation a b c =
+  >   let sq x = x * x
+  >   in
+  >   let d = sq b - 4 * a * c
+  >   in
+  >   if d > 0 then 2 else (if d = 0 then 1 else 0)
+  > 
+  > let main = count_solutions_of_sq_equation 2 9 4
+  > EOF

@@ -125,8 +125,9 @@ let%expect_test _ =
        , CBinaryOperation (Mul, ImmInt 0, ImmInt 100)
        , ACExpr (CImm (ImmId (AnfId 1))) );
   [%expect {|
-  let i1 = 0 * 100 in 
-  i1
+  let i1 =
+    0 * 100 in
+    i1
   |}]
 ;;
 
@@ -140,8 +141,10 @@ let%expect_test _ =
            , CBinaryOperation (Sub, ImmId (AnfId 1), ImmInt 10)
            , ACExpr (CBinaryOperation (Eq, ImmId (AnfId 2), ImmId (AnfId 1))) ) );
   [%expect {|
-  let i1 = 0 * 100 in 
-  let i2 = i1 - 10 in
-  i2 = i1
+  let i1 =
+    0 * 100 in
+    let i2 =
+    i1 - 10 in
+    i2 = i1
   |}]
 ;;

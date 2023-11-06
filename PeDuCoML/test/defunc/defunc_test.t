@@ -22,6 +22,7 @@
   > let main k = 
   >   let add_k x y = (x + y) * k in
   >   - (add_k 1 2)
+  > EOF
   let `ll_0 k x y = (x + y) * k
   let main k = -(((`ll_0 k) 1) 2)
   $ ./defunc_test.exe <<- EOF
@@ -99,6 +100,14 @@
   > EOF
   let `ll_0 x z = match z with | y -> x
   let main x = `ll_0 x
+  $ ./defunc_test.exe <<- EOF
+  > let main x = 
+  >   fun z ->
+  >   match z with
+  >   | y -> y
+  > EOF
+  let `ll_0 z = match z with | y -> y
+  let main x = `ll_0
   $ ./defunc_test.exe <<-EOF
   > let rec factorial n = if n <= 1 then 1 else n * factorial (n - 1)
   > let main = factorial 6

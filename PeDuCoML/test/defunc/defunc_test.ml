@@ -17,6 +17,6 @@ let print_ll code =
 ;;
 
 let _ =
-  let code = Stdio.In_channel.input_all Caml.stdin in
+  let code = Stdio.In_channel.input_all Stdlib.stdin in
   print_ll code
 ;;

@@ -7,7 +7,7 @@ open PeDuCoML.Inferencer
 open PeDuCoML.Typing
 
 (* Doesn't work yet, this is a template for the future *)
-let print_anf code =
+let print_types code =
   match parse code with
   | Ok ast ->
     (match R.run (check_types ast) with
@@ -20,6 +20,6 @@ let print_anf code =
 ;;
 
 let _ =
-  let code = Stdio.In_channel.input_all Caml.stdin in
-  print_anf code
+  let code = Stdio.In_channel.input_all Stdlib.stdin in
+  print_types code
 ;;

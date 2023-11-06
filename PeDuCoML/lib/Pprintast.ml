@@ -45,7 +45,8 @@ let rec pp_pattern fmt =
   function
   | PLiteral literal -> pp_literal fmt literal
   | PWildcard -> fprintf fmt "_"
-  | PTuple list -> pp_list fmt ", " list
+  | PTuple (first_pattern, second_pattern, other_patterns) ->
+    pp_list fmt ", " (first_pattern :: second_pattern :: other_patterns)
   | PList list -> fprintf fmt "[%a]" (fun fmt -> pp_list fmt "; ") list
   | PConstructList (operand, list) ->
     fprintf
@@ -87,6 +88,8 @@ let rec pp_expression fmt =
          | ELiteral _, EIdentifier _
          | EIdentifier _, ELiteral _
          | EIdentifier _, EIdentifier _ -> "%a %a %a"
+         | (ELiteral _ | EIdentifier _), _ -> "%a %a (%a)"
+         | _, (ELiteral _ | EIdentifier _) -> "(%a) %a %a"
          | _ -> "(%a) %a (%a)")
     in
     fprintf
@@ -114,8 +117,14 @@ let rec pp_expression fmt =
       left_operand
       pp_expression
       right_operand
-  | EFun (pattern_list, expression) ->
-    fprintf fmt "fun %a -> %a" pp_pattern_list pattern_list pp_expression expression
+  | EFun (first_arg, other_args, fun_body) ->
+    fprintf
+      fmt
+      "fun %a -> %a"
+      pp_pattern_list
+      (first_arg :: other_args)
+      pp_expression
+      fun_body
   | EList list -> fprintf fmt "[%a]" (fun fmt -> pp_list fmt "; ") list
   | EConstructList (operand, list) ->
     fprintf
@@ -125,7 +134,8 @@ let rec pp_expression fmt =
       operand
       pp_expression
       list
-  | ETuple list -> pp_list fmt ", " list
+  | ETuple (first_elem, second_elem, other_elems) ->
+    pp_list fmt ", " (first_elem :: second_elem :: other_elems)
   | EIf (predicate, true_branch, false_branch) ->
     fprintf
       fmt
@@ -136,16 +146,17 @@ let rec pp_expression fmt =
       true_branch
       pp_expression
       false_branch
-  | ELetIn (declaration_list, expression) ->
+  | ELetIn (first_declaration, other_declarations, body) ->
+    let declaration_list = first_declaration :: other_declarations in
     (match declaration_list with
      | [] -> fprintf fmt "Parsing error."
      | head :: tail ->
        fprintf fmt "%a" pp_declaration head;
        List.iter tail ~f:(fun declaration -> pp_declaration fmt declaration);
-       fprintf fmt "in %a" pp_expression expression)
-  | EMatchWith (matched_expression, case_list) ->
+       fprintf fmt " in %a" pp_expression body)
+  | EMatchWith (matched_expression, first_case, other_cases) ->
     fprintf fmt "match %a with" pp_expression matched_expression;
-    List.iter case_list ~f:(fun (case, action) ->
+    List.iter (first_case :: other_cases) ~f:(fun (case, action) ->
       fprintf fmt " | %a -> %a" pp_pattern case pp_expression action)
 
 and pp_declaration fmt =
@@ -179,26 +190,22 @@ and pp_declaration fmt =
 let%expect_test _ =
   printf "%a" pp_expression
   @@ EFun
-       ( [ PIdentifier "x"; PIdentifier "y"; PIdentifier "z" ]
+       ( PIdentifier "x"
+       , [ PIdentifier "y"; PIdentifier "z" ]
        , EMatchWith
-           ( ETuple [ EIdentifier "x"; EIdentifier "y"; EIdentifier "z" ]
+           ( ETuple (EIdentifier "x", EIdentifier "y", [ EIdentifier "z" ])
+           , ( PTuple
+                 (PLiteral (LBool true), PLiteral (LBool true), [ PLiteral (LBool false) ])
+             , ELiteral (LBool true) )
            , [ ( PTuple
-                   [ PLiteral (LBool true)
-                   ; PLiteral (LBool true)
-                   ; PLiteral (LBool false)
-                   ]
+                   ( PLiteral (LBool true)
+                   , PLiteral (LBool false)
+                   , [ PLiteral (LBool true) ] )
                , ELiteral (LBool true) )
              ; ( PTuple
-                   [ PLiteral (LBool true)
-                   ; PLiteral (LBool false)
-                   ; PLiteral (LBool true)
-                   ]
-               , ELiteral (LBool true) )
-             ; ( PTuple
-                   [ PLiteral (LBool false)
-                   ; PLiteral (LBool true)
-                   ; PLiteral (LBool true)
-                   ]
+                   ( PLiteral (LBool false)
+                   , PLiteral (LBool true)
+                   , [ PLiteral (LBool true) ] )
                , ELiteral (LBool true) )
              ; PWildcard, ELiteral (LBool false)
              ] ) );
@@ -211,15 +218,15 @@ let%expect_test _ =
 let%expect_test _ =
   printf "%a" pp_expression
   @@ EFun
-       ( [ PIdentifier "line"; PIdentifier "number"; PIdentifier "line_mult_number" ]
+       ( PIdentifier "line"
+       , [ PIdentifier "number"; PIdentifier "line_mult_number" ]
        , EMatchWith
            ( EIdentifier "line"
-           , [ ( PConstructList (PIdentifier "head", PIdentifier "tail")
-               , EConstructList
-                   ( EBinaryOperation (Mul, EIdentifier "head", EIdentifier "number")
-                   , EApplication (EIdentifier "line_mult_number", EIdentifier "tail") ) )
-             ; PWildcard, EList []
-             ] ) );
+           , ( PConstructList (PIdentifier "head", PIdentifier "tail")
+             , EConstructList
+                 ( EBinaryOperation (Mul, EIdentifier "head", EIdentifier "number")
+                 , EApplication (EIdentifier "line_mult_number", EIdentifier "tail") ) )
+           , [ PWildcard, EList [] ] ) );
   [%expect
     {|
   fun line number line_mult_number -> match line with | head :: tail -> (head * number) :: (line_mult_number tail) | _ -> []

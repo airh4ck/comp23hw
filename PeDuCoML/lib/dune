@@ -1,9 +1,20 @@
 (library
- (modules Ast Parser Pprintast Inferencer Typing Util)
+ (modules
+  Ast
+  Parser
+  Pprintast
+  Inferencer
+  Typing
+  Util
+  Anf
+  Pprintanf
+  Closure_conversion
+  Lambda_lift)
  (libraries angstrom)
  (preprocess
   (pps ppx_expect ppx_deriving.show ppx_deriving.eq))
  (inline_tests)
  (instrumentation
   (backend bisect_ppx))
- (name PeDuCoML))
+ (name PeDuCoML)
+ (public_name PeDuCoML.Lib))

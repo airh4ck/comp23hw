@@ -74,11 +74,10 @@
   >   let rev_const f s = const s in
   >   rev_const (fun _ -> x)
   > EOF
-  let `ll_1 f s = f
-  let `ll_0 f = `ll_1 f
-  let `ll_2 const f s = `ll_0 s
-  let `ll_3 x _ = x
-  let main x = (`ll_2 `ll_0) (`ll_3 x)
+  let `ll_0 f s = f
+  let `ll_1 f s = `ll_0 s
+  let `ll_2 x _ = x
+  let main x = `ll_1 (`ll_2 x)
   $ ./defunc_test.exe <<- EOF
   > let count_solutions_of_sq_equation a b c =
   >   let sq x = x * x
@@ -155,7 +154,7 @@
   > EOF
   let `ll_0 k x y = x + k
   let `ll_1 x = x
-  let main k i = match `ll_0 k with | f -> let id  = `ll_1 in f i
+  let main k i = match `ll_0 k with | f -> f i
   $ ./defunc_test.exe <<- EOF
   > let phi n = 
   >   let rec helper last1 last2 n = 

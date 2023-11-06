@@ -2,12 +2,21 @@ open Util
 open Ast
 
 let closure_conversion global_scope =
-  let rec closure_declaration env global_scope =
-    let get_constructor = function
-      | DDeclaration _ -> ddeclaration
-      | DRecursiveDeclaration _ -> drecursivedeclaration
-    in
-    function
+  let get_constructor = function
+    | DDeclaration _ -> ddeclaration
+    | DRecursiveDeclaration _ -> drecursivedeclaration
+  in
+  let simplify_decl = function
+    | ( DDeclaration (name, pattern_list, body)
+      | DRecursiveDeclaration (name, pattern_list, body) ) as original ->
+      let decl = get_constructor original in
+      (match body with
+       | EFun (first_arg, other_args, body) ->
+         decl name (pattern_list @ (first_arg :: other_args)) body
+       | _ -> original)
+  in
+  let rec closure_declaration env global_scope declaration =
+    match simplify_decl declaration with
     | ( DDeclaration (name, pattern_list, body)
       | DRecursiveDeclaration (name, pattern_list, body) ) as original
       when Base.List.length pattern_list > 0 ->
@@ -32,11 +41,13 @@ let closure_conversion global_scope =
       in
       let decl = get_constructor original in
       let env = Base.Map.set env ~key:name ~data:free_vars in
-      decl name closed_args (closure_expression env global_scope body), env
+      ( decl name closed_args (closure_expression env global_scope body)
+      , env
+      , Base.Set.add global_scope name )
     | (DDeclaration (name, _, body) | DRecursiveDeclaration (name, _, body)) as original
       ->
       let decl = get_constructor original in
-      decl name [] (closure_expression env global_scope body), env
+      decl name [] (closure_expression env global_scope body), env, global_scope
   and closure_expression env global_scope = function
     | EFun (first_arg, other_args, body) as original ->
       let pattern_list = first_arg :: other_args in
@@ -63,15 +74,16 @@ let closure_conversion global_scope =
            ~f:(fun var acc -> eapplication acc (eidentifier var))
            ~init:(efun head tail body))
     | ELetIn (first_decl, other_decls, body) ->
-      let decl, env = closure_declaration env global_scope first_decl in
-      let rec helper decl_list acc env =
+      let decl, env, global_scope = closure_declaration env global_scope first_decl in
+      let rec helper decl_list acc global_scope_acc env =
         match decl_list with
         | head :: tail ->
-          let head_decl, env = closure_declaration env global_scope head in
-          helper tail (head_decl :: acc) env
-        | _ -> acc
+          let head_decl, env, global_scope = closure_declaration env global_scope head in
+          helper tail (head_decl :: acc) global_scope env
+        | _ -> acc, global_scope_acc
       in
-      eletin decl (helper other_decls [] env) (closure_expression env global_scope body)
+      let decl_acc, global_scope = helper other_decls [] global_scope env in
+      eletin decl decl_acc (closure_expression env global_scope body)
     | EIdentifier id as original ->
       (match Base.Map.find env id with
        | None -> original

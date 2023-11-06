@@ -62,7 +62,7 @@
   >   let rev_const f s = const s in
   >   rev_const (fun _ -> x)
   > EOF
-  let main x = let const f = (fun f s -> f) f in let rev_const const f s = const s in (rev_const const) ((fun x _ -> x) x)
+  let main x = let const f s = f in let rev_const f s = const s in rev_const ((fun x _ -> x) x)
   $ ./closure_test.exe debug <<- EOF
   > let main x = 
   >   fun z ->
@@ -114,7 +114,7 @@
   >     let id = fun x -> x in
   >     f i
   > EOF
-  let main k i = match (fun k x y -> x + k) k with | f -> let id  = fun x -> x in f i
+  let main k i = match (fun k x y -> x + k) k with | f -> let id x = x in f i
   $ ./closure_test.exe <<- EOF
   > let count_solutions_of_sq_equation a b c =
   >   let sq x = x * x

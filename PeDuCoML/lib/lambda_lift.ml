@@ -19,7 +19,6 @@ let lambda_lift =
         return @@ (name, fresh_name, decl fresh_name pattern_list body, lifted)
       | (DDeclaration (name, _, body) | DRecursiveDeclaration (name, _, body)) as original
         ->
-        (* TODO: need to not lift in this case *)
         let* body, lifted = ll_expr env lifted_decls body in
         let decl = get_constructor original in
         return @@ (name, name, decl name [] body, lifted)

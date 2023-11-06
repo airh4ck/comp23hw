@@ -54,14 +54,6 @@ let parse_uncapitalized_entity =
   | _ -> fail "Parsing error: not an uncapitalized entity."
 ;;
 
-let parse_capitalized_entity =
-  parse_entity
-  >>= fun entity ->
-  match entity.[0] with
-  | 'A' .. 'Z' -> return entity
-  | _ -> fail "Parsing error: not a capitalized entity."
-;;
-
 let keywords =
   [ "let"; "rec"; "match"; "with"; "if"; "then"; "else"; "in"; "fun"; "and"; "type" ]
 ;;

@@ -205,7 +205,7 @@ let rec rewrite_match expr =
       | PConstructList (head_pattern, tail_pattern) ->
         let partial_condition =
           eif
-            (ebinary_operation GT (rt_length matched_expression) (eliteral @@ lint 0))
+            (ebinary_operation Eq (rt_length matched_expression) (eliteral @@ lint 0))
             (eliteral @@ lbool false)
         in
         let head_condition =
@@ -379,7 +379,7 @@ let process_declaration env declaration =
            (current_arg_number + 1)
            (arg_name :: args_list)
            tail)
-    | _ -> args_list, current_expr
+    | _ -> List.rev args_list, current_expr
   in
   let update_map env args_list =
     Base.List.fold_right args_list ~init:(return env) ~f:(fun id acc ->
@@ -410,7 +410,7 @@ let anf_conversion (program : declaration list) : global_scope_function list Sta
       let* ((name, _, _) as global_scope_f) = process_declaration env head in
       let env = Base.Map.set env ~key:name ~data:(global_scope_id name) in
       helper env (global_scope_f :: current_list) tail
-    | _ -> return @@ current_list
+    | _ -> return @@ List.rev current_list
   in
   let env = Base.Map.empty (module Base.String) in
   let env = Base.Map.set env ~key:"`head" ~data:(global_scope_id "`head") in

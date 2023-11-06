@@ -1,3 +1,7 @@
+(** Copyright 2023-2024, Danila Pechenev, Ilya Dudnikov *)
+
+(** SPDX-License-Identifier: LGPL-3.0-or-later *)
+
 open PeDuCoML.Parser
 open PeDuCoML.Inferencer
 open PeDuCoML.Typing
@@ -7,9 +11,11 @@ let print_anf code =
   match parse code with
   | Ok ast ->
     (match R.run (check_types ast) with
-    | Ok typ_list -> 
-      List.iter (fun (name, (_, typ)) -> Format.printf "%s: %a\n" name pp_type typ) typ_list
-    | Error err -> print_type_error err)
+     | Ok typ_list ->
+       List.iter
+         (fun (name, (_, typ)) -> Format.printf "%s: %a\n" name pp_type typ)
+         typ_list
+     | Error err -> print_type_error err)
   | Error err -> Format.printf "%s\n" err
 ;;
 

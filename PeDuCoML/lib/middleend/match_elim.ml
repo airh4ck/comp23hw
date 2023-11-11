@@ -85,7 +85,7 @@ let rec rewrite_match expr =
     let expr_list_rewritten = rewrite_match expr_list in
     mfconstructlist operand_rewritten expr_list_rewritten
   | CFLetIn (first_declaration, other_declarations, body) ->
-    let rewrite_let (id, body) = cflet id (rewrite_match body) in
+    let rewrite_let (id, body) = mflet id (rewrite_match body) in
     mfletin
       (rewrite_let first_declaration)
       (List.map rewrite_let other_declarations)

@@ -60,7 +60,7 @@ let acexpr cexpr = ACExpr cexpr
 let acimm imm_expr = acexpr @@ cimm imm_expr
 (* ------------------ *)
 
-open State.State
+open State
 open Match_elim
 
 (* Runtime fuctions (unavailable to users)
@@ -141,7 +141,7 @@ let rec anf (env : (string, unique_id, Base.String.comparator_witness) Base.Map.
     anf env expr (fun imm_expr ->
       match other_declarations with
       | head :: tail ->
-        let* body = anf new_env (mfletin head tail body) k in
+        let* body = anf new_env (MFLetIn (head, tail, body)) k in
         return @@ alet (anf_id fresh_var) (cimm imm_expr) body
       | _ ->
         let* body = anf new_env body k in

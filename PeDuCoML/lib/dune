@@ -21,3 +21,5 @@
   (backend bisect_ppx))
  (name PeDuCoML)
  (public_name PeDuCoML.Lib))
+
+(include_subdirs unqualified)

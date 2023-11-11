@@ -6,6 +6,7 @@ open Ast
 type unique_id =
   | AnfId of int
   | GlobalScopeId of string
+[@@deriving show { with_path = false }]
 
 type imm_expr =
   | ImmInt of int

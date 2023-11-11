@@ -9,8 +9,9 @@
   Anf
   Pprintanf
   Closure_conversion
-  Lambda_lift)
- (libraries angstrom)
+  Lambda_lift
+  Llvm_comp)
+ (libraries angstrom llvm)
  (preprocess
   (pps ppx_expect ppx_deriving.show ppx_deriving.eq))
  (inline_tests)

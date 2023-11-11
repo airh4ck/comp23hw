@@ -9,7 +9,9 @@
   Anf
   Pprintanf
   Closure_conversion
-  Lambda_lift)
+  Lambda_lift
+  Match_elim
+  State)
  (libraries angstrom)
  (preprocess
   (pps ppx_expect ppx_deriving.show ppx_deriving.eq))

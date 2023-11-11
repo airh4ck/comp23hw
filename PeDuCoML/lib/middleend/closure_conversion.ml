@@ -6,6 +6,7 @@ open Util
 open Ast
 
 let closure_conversion global_scope =
+  let empty = Base.Set.empty (module Base.String) in
   let get_constructor = function
     | DDeclaration _ -> ddeclaration
     | DRecursiveDeclaration _ -> drecursivedeclaration

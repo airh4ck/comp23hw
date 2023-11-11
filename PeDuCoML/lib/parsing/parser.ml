@@ -20,7 +20,6 @@ type dispatch =
   ; parse_conditional : dispatch -> expression Angstrom.t
   ; parse_matching : dispatch -> expression Angstrom.t
   ; parse_let_in : dispatch -> expression Angstrom.t
-  ; parse_expression : dispatch -> expression Angstrom.t
   ; parse_pwildcard : pattern Angstrom.t
   ; parse_ptuple : dispatch -> pattern Angstrom.t
   ; parse_plist : dispatch -> pattern Angstrom.t
@@ -598,23 +597,6 @@ let parse_list_constructing d =
 
 (* --------------------------- *)
 
-let parse_expression d =
-  choice
-    [ d.parse_tuple d
-    ; d.parse_list_constructing d
-    ; d.parse_binary_operation d
-    ; d.parse_unary_operation d
-    ; d.parse_list d
-    ; d.parse_application d
-    ; d.parse_fun d
-    ; d.parse_conditional d
-    ; d.parse_matching d
-    ; d.parse_let_in d
-    ; parse_literal
-    ; parse_identifier
-    ]
-;;
-
 let default =
   { parse_list_constructing
   ; parse_tuple
@@ -625,8 +607,7 @@ let default =
   ; parse_fun
   ; parse_conditional
   ; parse_matching
-  ; parse_let_in
-  ; parse_expression
+  ; parse_let_in (* ; parse_expression *)
   ; parse_pwildcard
   ; parse_ptuple
   ; parse_plist
@@ -636,21 +617,7 @@ let default =
   }
 ;;
 
-let parse_tuple = parse_tuple default
-let parse_list = parse_list default
-let parse_fun = parse_fun default
 let parse_declaration = parse_declaration default
-let parse_conditional = parse_conditional default
-let parse_matching = parse_matching default
-let parse_binary_operation = parse_binary_operation default
-let parse_let_in = parse_let_in default
-let parse_application = parse_application default
-let parse_unary_operation = parse_unary_operation default
-let parse_list_constructing = parse_list_constructing default
-let parse_expression = parse_expression default
-let parse_ptuple = parse_ptuple default
-let parse_plist = parse_plist default
-let parse_pconstruct_list = parse_pconstruct_list default
 
 (* Main parsing function *)
 let parse : input -> (declaration list, error_message) result =

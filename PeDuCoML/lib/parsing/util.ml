@@ -5,7 +5,6 @@
 open Ast
 
 let empty = Base.Set.empty (module Base.String)
-let singleton = Base.Set.singleton (module Base.String)
 
 let find_identifiers_pattern =
   let rec helper acc = function

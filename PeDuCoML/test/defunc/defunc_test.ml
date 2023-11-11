@@ -3,7 +3,7 @@
 (** SPDX-License-Identifier: LGPL-3.0-or-later *)
 
 open PeDuCoML.Parser
-open PeDuCoML.Pprintast
+open PeDuCoML.Pprintcf
 open PeDuCoML.Closure_conversion
 open PeDuCoML.Lambda_lift
 

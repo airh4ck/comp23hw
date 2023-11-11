@@ -17,7 +17,7 @@
   >   (42 + add_k 42 (-42))
   > EOF
   let `ll_0 k x y = (x + y) * k
-  let main k = let waste_of_space  = () in 42 + (((`ll_0 k) 42) (-42))
+  let main k = let waste_of_space = () in 42 + (((`ll_0 k) 42) (-42))
   $ ./defunc_test.exe <<- EOF
   > let main k = 
   >   let add_k x y = (x + y) * k in
@@ -32,7 +32,7 @@
   >   g (h [1; 2; 3; 42])
   > EOF
   let `ll_0 ini acc = ini :: acc
-  let `ll_1 head :: tail = tail
+  let `ll_1 ``1 = match ``1 with | head :: tail -> tail
   let f ini = (`ll_0 ini) (`ll_1 ([1; 2; 3; 42]))
   $ ./defunc_test.exe <<- EOF
   > let fib n = 
@@ -77,7 +77,7 @@
   > EOF
   let `ll_0 f s = f
   let `ll_1 f s = `ll_0 s
-  let `ll_2 x _ = x
+  let `ll_2 x ``1 = match ``1 with | _ -> x
   let main x = `ll_1 (`ll_2 x)
   $ ./defunc_test.exe <<- EOF
   > let count_solutions_of_sq_equation a b c =
@@ -90,7 +90,7 @@
   > let main = count_solutions_of_sq_equation 2 9 4
   > EOF
   let `ll_0 x = x * x
-  let count_solutions_of_sq_equation a b c = let d  = (`ll_0 b) - ((4 * a) * c) in if d > 0 then 2 else if d = 0 then 1 else 0
+  let count_solutions_of_sq_equation a b c = let d = (`ll_0 b) - ((4 * a) * c) in if d > 0 then 2 else if d = 0 then 1 else 0
   let main  = ((count_solutions_of_sq_equation 2) 9) 4
   $ ./defunc_test.exe <<- EOF
   > let main x = 

@@ -9,6 +9,7 @@ open PeDuCoML.Pprintanf
 open PeDuCoML.Anf
 open PeDuCoML.Closure_conversion
 open PeDuCoML.Lambda_lift
+open PeDuCoML.Match_elim
 
 let print_anf code =
   match parse code with
@@ -17,7 +18,8 @@ let print_anf code =
      | Ok _ ->
        let closure = run_closure ast in
        let defunced = run_lambda_lifting closure in
-       let anf = run_anf_conversion defunced in
+       let match_free = elim_match defunced in
+       let anf = run_anf_conversion match_free in
        Base.List.iter
          ~f:(fun func -> Format.printf "%a\n" pp_global_scope_function func)
          anf

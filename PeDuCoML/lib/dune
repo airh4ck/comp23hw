@@ -3,6 +3,7 @@
   Ast
   Parser
   Pprintast
+  Pprintcf
   Inferencer
   Typing
   Util

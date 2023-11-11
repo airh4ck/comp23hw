@@ -60,40 +60,7 @@ let acexpr cexpr = ACExpr cexpr
 let acimm imm_expr = acexpr @@ cimm imm_expr
 (* ------------------ *)
 
-module State : sig
-  type 'a t
-
-  include Base.Monad.Infix with type 'a t := 'a t
-
-  val fresh : int t
-  val bind : 'a t -> ('a -> 'b t) -> 'b t
-  val return : 'a -> 'a t
-  val ( let* ) : 'a t -> ('a -> 'b t) -> 'b t
-  val run : 'a t -> 'a
-end = struct
-  type 'a t = int -> 'a * int
-
-  let fresh last = last, last + 1
-
-  let ( >>= ) : 'a t -> ('a -> 'b t) -> 'b t =
-    fun m f state ->
-    let value, st = m state in
-    (f value) st
-  ;;
-
-  let bind m f = m >>= f
-  let return value st = value, st
-  let ( let* ) = ( >>= )
-  let run monad = fst @@ monad 0
-
-  let ( >>| ) : 'a t -> ('a -> 'b) -> 'b t =
-    fun m f state ->
-    let value, st = m state in
-    f value, st
-  ;;
-end
-
-open State
+open State.State
 open Match_elim
 
 (* Runtime fuctions (unavailable to users)
@@ -106,9 +73,7 @@ open Match_elim
    | `at_tuple   | tuple index  |
    ------------------------------*)
 
-let rec anf (env : (string, unique_id, Base.String.comparator_witness) Base.Map.t) expr k
-  : aexpr State.t
-  =
+let rec anf (env : (string, unique_id, Base.String.comparator_witness) Base.Map.t) expr k =
   match expr with
   | MFLiteral literal ->
     (match literal with
@@ -206,7 +171,7 @@ let process_declaration env declaration =
     return global_scope_f
 ;;
 
-let anf_conversion program : global_scope_function list State.t =
+let anf_conversion program =
   let rec helper env current_list = function
     | head :: tail ->
       let* ((name, _, _) as global_scope_f) = process_declaration env head in

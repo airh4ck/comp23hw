@@ -5,6 +5,21 @@ open Ast
 
 open Typing
 
+(* Ground types *)
+let int_typ = TGround Int
+let bool_typ = TGround Bool
+let string_typ = TGround String
+let unit_typ = TGround Unit
+let char_typ = TGround Char
+(* ------------ *)
+
+(* Smart constructors for types *)
+let tarrow left_type right_type = TArr (left_type, right_type)
+let ttuple type_list = TTuple type_list
+let tlist typ = TList typ
+let tvar n = TVar n
+(* ---------------------------- *)
+
 module R : sig
   type 'a t
 
@@ -108,10 +123,8 @@ module Subst : sig
   val singleton : fresh -> typ -> t R.t
 
   (** Getting value from substitution *)
-  val find_exn : fresh -> t -> typ
-
-  val find : fresh -> t -> typ option
   val apply : t -> typ -> typ
+
   val unify : typ -> typ -> t R.t
 
   (** Compositon of substitutions *)
@@ -137,7 +150,6 @@ end = struct
     return @@ Base.Map.set empty ~key ~data:value
   ;;
 
-  let find_exn key subst = Base.Map.find_exn subst key
   let find key subst = Base.Map.find subst key
   let remove subst key = Base.Map.remove subst key
 
@@ -213,10 +225,6 @@ end
 module Scheme = struct
   type t = scheme
 
-  let occurs_in v = function
-    | s, t -> (not (Base.Set.mem s v)) && Type.occurs_in v t
-  ;;
-
   let free_vars = function
     | s, t -> Base.Set.diff (Type.free_vars t) s
   ;;
@@ -240,7 +248,6 @@ module TypeEnv = struct
   ;;
 
   let apply s env = Base.Map.map env ~f:(Scheme.apply s)
-  let find_exn name map = Base.Map.find_exn ~equal:String.equal map name
 end
 
 open R

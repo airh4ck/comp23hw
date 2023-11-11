@@ -22,9 +22,12 @@ let closure_conversion global_scope =
   in
   let rec closure_declaration env global_scope declaration =
     match simplify_decl declaration with
+    | (DDeclaration (name, [], body) | DRecursiveDeclaration (name, [], body)) as original
+      ->
+      let decl = get_constructor original in
+      decl name [] (closure_expression env global_scope body), env, global_scope
     | ( DDeclaration (name, pattern_list, body)
-      | DRecursiveDeclaration (name, pattern_list, body) ) as original
-      when Base.List.length pattern_list > 0 ->
+      | DRecursiveDeclaration (name, pattern_list, body) ) as original ->
       let pattern_args =
         List.fold_right
           (fun pattern acc -> Base.Set.union (find_identifiers_pattern pattern) acc)
@@ -49,10 +52,6 @@ let closure_conversion global_scope =
       ( decl name closed_args (closure_expression env global_scope body)
       , env
       , Base.Set.add global_scope name )
-    | (DDeclaration (name, _, body) | DRecursiveDeclaration (name, _, body)) as original
-      ->
-      let decl = get_constructor original in
-      decl name [] (closure_expression env global_scope body), env, global_scope
   and closure_expression env global_scope = function
     | EFun (first_arg, other_args, body) as original ->
       let pattern_list = first_arg :: other_args in

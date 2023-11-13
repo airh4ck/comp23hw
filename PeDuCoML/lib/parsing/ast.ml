@@ -9,7 +9,6 @@ type literal =
   | LString of string (** "42" *)
   | LChar of char (** '\n' *)
   | LBool of bool (** true *)
-  | LUnit (** () *)
 [@@deriving eq, show { with_path = false }]
 
 type binary_operator =
@@ -66,7 +65,6 @@ let lint x = LInt x
 let lstring x = LString x
 let lchar x = LChar x
 let lbool x = LBool x
-let lunit _ = LUnit
 
 (* Smart constructors for expressions *)
 let eliteral x = ELiteral x

@@ -12,7 +12,6 @@ type ground_type =
   | String
   | Char
   | Bool
-  | Unit
 [@@deriving eq, show { with_path = false }]
 
 type typ =

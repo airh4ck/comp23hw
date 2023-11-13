@@ -13,11 +13,11 @@
   $ ./defunc_test.exe <<- EOF
   > let main k = 
   >   let add_k x y = (x + y) * k in
-  >   let waste_of_space = () in
+  >   let waste_of_space = 0 in
   >   (42 + add_k 42 (-42))
   > EOF
   let `ll_0 k x y = (x + y) * k
-  let main k = let waste_of_space = () in 42 + (((`ll_0 k) 42) (-42))
+  let main k = let waste_of_space = 0 in 42 + (((`ll_0 k) 42) (-42))
   $ ./defunc_test.exe <<- EOF
   > let main k = 
   >   let add_k x y = (x + y) * k in

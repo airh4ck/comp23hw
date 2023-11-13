@@ -10,7 +10,6 @@ type ground_type =
   | String
   | Char
   | Bool
-  | Unit
 [@@deriving eq, show { with_path = false }]
 
 type typ =
@@ -32,8 +31,7 @@ let rec pp_type fmt typ =
      | Int -> fprintf fmt "int"
      | String -> fprintf fmt "string"
      | Char -> fprintf fmt "char"
-     | Bool -> fprintf fmt "bool"
-     | Unit -> fprintf fmt "unit")
+     | Bool -> fprintf fmt "bool")
   | TTuple value_list ->
     fprintf
       fmt

@@ -15,9 +15,9 @@
   > EOF
   let main = true
   $ ./anf_test.exe <<- EOF
-  > let main = ()
+  > let main = 0
   > EOF
-  let main = ()
+  let main = 0
   $ ./anf_test.exe <<- EOF
   > let main = fun x -> x
   > EOF
@@ -64,7 +64,7 @@
   $ ./anf_test.exe <<- EOF
   > let main k = 
   >   let add_k x y = (x + y) * k in
-  >   let waste_of_space = () in
+  >   let waste_of_space = 0 in
   >   (42 + add_k 42 (-42))
   > EOF
   let `ll_0 i0 i1 i2 = let i4 =
@@ -73,7 +73,7 @@
     i4 * i0 in
     i3
   let main i5 = let i6 =
-    () in
+    0 in
     let i11 =
     `ll_0 i5 in
     let i9 =

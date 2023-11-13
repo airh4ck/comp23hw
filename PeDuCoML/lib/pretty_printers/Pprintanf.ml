@@ -15,7 +15,6 @@ let pp_immexpr fmt = function
   | ImmString str -> fprintf fmt "\"%s\"" str
   | ImmChar smb -> fprintf fmt "'%c'" smb
   | ImmBool boolean -> fprintf fmt (if boolean then "true" else "false")
-  | ImmUnit -> fprintf fmt "()"
   (* | ImmWildcard -> fprintf fmt "_" *)
   | ImmId id -> pp_id fmt id
 ;;

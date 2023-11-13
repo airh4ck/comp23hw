@@ -9,7 +9,6 @@ open Typing
 let int_typ = TGround Int
 let bool_typ = TGround Bool
 let string_typ = TGround String
-let unit_typ = TGround Unit
 let char_typ = TGround Char
 (* ------------ *)
 
@@ -289,8 +288,7 @@ let infer =
        | LInt _ -> return (Subst.empty, int_typ)
        | LString _ -> return (Subst.empty, string_typ)
        | LChar _ -> return (Subst.empty, char_typ)
-       | LBool _ -> return (Subst.empty, bool_typ)
-       | LUnit -> return (Subst.empty, unit_typ))
+       | LBool _ -> return (Subst.empty, bool_typ))
     | PIdentifier identifier -> lookup_env identifier env
     | PWildcard ->
       let* fresh = fresh_var in
@@ -345,8 +343,7 @@ let infer =
        | LInt _ -> return (Subst.empty, int_typ)
        | LString _ -> return (Subst.empty, string_typ)
        | LChar _ -> return (Subst.empty, char_typ)
-       | LBool _ -> return (Subst.empty, bool_typ)
-       | LUnit -> return (Subst.empty, unit_typ))
+       | LBool _ -> return (Subst.empty, bool_typ))
     | EIdentifier identifier -> lookup_env identifier env
     | EFun (first_arg, other_args, body) ->
       let* env =
@@ -745,10 +742,10 @@ let%expect_test _ =
                ( PIdentifier "x"
                , []
                , EBinaryOperation (LT, ELiteral (LString "asdf"), EIdentifier "x") )
-           , ELiteral LUnit ) );
+           , ELiteral (LBool true) ) );
   [%expect
     {|
-  Unification failed: type of the expression is unit but expected type was string
+  Unification failed: type of the expression is bool but expected type was string
   |}]
 ;;
 

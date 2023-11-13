@@ -14,7 +14,6 @@ type imm_expr =
   | ImmString of string
   | ImmChar of char
   | ImmBool of bool
-  | ImmUnit
   | ImmId of unique_id
 
 type cexpr =

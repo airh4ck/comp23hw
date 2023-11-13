@@ -13,7 +13,6 @@ type imm_expr =
   | ImmString of string
   | ImmChar of char
   | ImmBool of bool
-  | ImmUnit
   | ImmId of unique_id
 
 type cexpr =
@@ -42,7 +41,6 @@ let imm_int num = ImmInt num
 let imm_string str = ImmString str
 let imm_char sym = ImmChar sym
 let imm_bool b = ImmBool b
-let imm_unit = ImmUnit
 let imm_id id = ImmId id
 
 (* cexpr *)
@@ -81,8 +79,7 @@ let rec anf (env : (string, unique_id, Base.String.comparator_witness) Base.Map.
      | LInt num -> k (imm_int num)
      | LString str -> k (imm_string str)
      | LChar sym -> k (imm_char sym)
-     | LBool b -> k (imm_bool b)
-     | LUnit -> k imm_unit)
+     | LBool b -> k (imm_bool b))
   | MFIdentifier x -> k @@ imm_id (Base.Map.find_exn env x)
   | MFBinaryOperation (bop, left, right) ->
     let* fresh_var = fresh in

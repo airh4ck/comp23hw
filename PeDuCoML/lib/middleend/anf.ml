@@ -73,6 +73,8 @@ open Match_elim
 let process_id id =
   if id = "peducoml_field" || id = "peducoml_tail" || id = "peducoml_length"
   then "user_" ^ id
+  else if String.starts_with ~prefix:"`" id
+  then String.sub id 1 (String.length id - 1)
   else id
 ;;
 

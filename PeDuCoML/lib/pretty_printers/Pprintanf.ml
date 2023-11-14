@@ -10,16 +10,7 @@ let pp_id fmt = function
   | GlobalScopeId id -> fprintf fmt "%s" id
 ;;
 
-let pp_immexpr fmt = function
-  | ImmInt num -> fprintf fmt "%d" num
-  | ImmString str -> fprintf fmt "\"%s\"" str
-  | ImmChar smb -> fprintf fmt "'%c'" smb
-  | ImmBool boolean -> fprintf fmt (if boolean then "true" else "false")
-  (* | ImmWildcard -> fprintf fmt "_" *)
-  | ImmId id -> pp_id fmt id
-;;
-
-let rec pp_cexpr fmt =
+let rec pp_immexpr fmt =
   let pp_list pp fmt delimiter =
     pp_print_list
       ~pp_sep:(fun fmt _ -> fprintf fmt delimiter)
@@ -27,6 +18,18 @@ let rec pp_cexpr fmt =
       fmt
   in
   function
+  | ImmInt num -> fprintf fmt "%d" num
+  | ImmString str -> fprintf fmt "\"%s\"" str
+  | ImmChar smb -> fprintf fmt "'%c'" smb
+  | ImmBool boolean -> fprintf fmt (if boolean then "true" else "false")
+  | ImmList imm_values ->
+    fprintf fmt "[%a]" (fun fmt -> pp_list pp_immexpr fmt "; ") imm_values
+  | ImmTuple imm_values ->
+    fprintf fmt "(%a)" (fun fmt -> pp_list pp_immexpr fmt ", ") imm_values
+  | ImmId id -> pp_id fmt id
+;;
+
+let rec pp_cexpr fmt = function
   | CBinaryOperation (bop, left, right) ->
     fprintf
       fmt
@@ -41,9 +44,6 @@ let rec pp_cexpr fmt =
     fprintf fmt "%a%a" Pprintast.pp_unary_operator unop pp_immexpr imm
   | CApplication (fun_imm, arg_imm) ->
     fprintf fmt "%a %a" pp_immexpr fun_imm pp_immexpr arg_imm
-  | CList imm_list -> fprintf fmt "[%a]" (fun fmt -> pp_list pp_immexpr fmt "; ") imm_list
-  | CTuple imm_list ->
-    fprintf fmt "(%a)" (fun fmt -> pp_list pp_immexpr fmt ", ") imm_list
   | CIf (condition, true_branch, false_branch) ->
     fprintf
       fmt

@@ -14,14 +14,14 @@ type imm_expr =
   | ImmString of string
   | ImmChar of char
   | ImmBool of bool
+  | ImmList of imm_expr list
+  | ImmTuple of imm_expr list
   | ImmId of unique_id
 
 type cexpr =
   | CBinaryOperation of binary_operator * imm_expr * imm_expr
   | CUnaryOperation of unary_operator * imm_expr
   | CApplication of imm_expr * imm_expr
-  | CList of imm_expr list
-  | CTuple of imm_expr list
   | CIf of imm_expr * imm_expr * imm_expr
   | CConstructList of imm_expr * imm_expr
   | CImm of imm_expr

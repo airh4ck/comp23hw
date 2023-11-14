@@ -13,14 +13,14 @@ type imm_expr =
   | ImmString of string
   | ImmChar of char
   | ImmBool of bool
+  | ImmList of imm_expr list
+  | ImmTuple of imm_expr list
   | ImmId of unique_id
 
 type cexpr =
   | CBinaryOperation of binary_operator * imm_expr * imm_expr
   | CUnaryOperation of unary_operator * imm_expr
   | CApplication of imm_expr * imm_expr
-  | CList of imm_expr list
-  | CTuple of imm_expr list
   | CIf of imm_expr * imm_expr * imm_expr
   | CConstructList of imm_expr * imm_expr
   | CImm of imm_expr
@@ -41,6 +41,8 @@ let imm_int num = ImmInt num
 let imm_string str = ImmString str
 let imm_char sym = ImmChar sym
 let imm_bool b = ImmBool b
+let imm_list imm_values = ImmList imm_values
+let imm_tuple imm_values = ImmTuple imm_values
 let imm_id id = ImmId id
 
 (* cexpr *)
@@ -48,8 +50,6 @@ let cbinary_operation bop left right = CBinaryOperation (bop, left, right)
 let cunary_operation uop expr = CUnaryOperation (uop, expr)
 let cimm imm_expr = CImm imm_expr
 let capplication fun_imm arg_imm = CApplication (fun_imm, arg_imm)
-let clist imm_expr_list = CList imm_expr_list
-let ctuple imm_expr_list = CTuple imm_expr_list
 let cif condition true_branch false_branch = CIf (condition, true_branch, false_branch)
 let cconstruct_list operand imm_expr_list = CConstructList (operand, imm_expr_list)
 
@@ -63,14 +63,18 @@ open State
 open Match_elim
 
 (* Runtime fuctions (unavailable to users)
-   | name        | args         |
-   ------------------------------
-   | `head       | list         |
-   | `tail       | list         |
-   | `length     | list         |
-   | `at_list    | list index   |
-   | `at_tuple   | tuple index  |
-   ------------------------------*)
+   | name             | args              |
+   ----------------------------------------
+   | peducoml_field   | list/tuple index  |
+   | peducoml_tail    | list/tuple        |
+   | peducoml_length  | list/tuple        |
+   ---------------------------------------*)
+
+let process_id id =
+  if id = "peducoml_field" || id = "peducoml_tail" || id = "peducoml_length"
+  then "user_" ^ id
+  else id
+;;
 
 let rec anf (env : (string, unique_id, Base.String.comparator_witness) Base.Map.t) expr k =
   match expr with
@@ -80,7 +84,7 @@ let rec anf (env : (string, unique_id, Base.String.comparator_witness) Base.Map.
      | LString str -> k (imm_string str)
      | LChar sym -> k (imm_char sym)
      | LBool b -> k (imm_bool b))
-  | MFIdentifier x -> k @@ imm_id (Base.Map.find_exn env x)
+  | MFIdentifier x -> k @@ imm_id (Base.Map.find_exn env (process_id x))
   | MFBinaryOperation (bop, left, right) ->
     let* fresh_var = fresh in
     let* body = k @@ imm_id (anf_id fresh_var) in
@@ -99,20 +103,16 @@ let rec anf (env : (string, unique_id, Base.String.comparator_witness) Base.Map.
       anf env arg_expr (fun imm_arg_expr ->
         return @@ alet (anf_id fresh_var) (capplication imm_fun_expr imm_arg_expr) body))
   | MFList expr_list ->
-    let* fresh_var = fresh in
-    let* body = k @@ imm_id (anf_id fresh_var) in
     let rec helper curr_list = function
       | head :: tail -> anf env head (fun imm -> helper (imm :: curr_list) tail)
-      | _ -> return @@ alet (anf_id fresh_var) (clist @@ Base.List.rev curr_list) body
+      | _ -> k (imm_list @@ Base.List.rev curr_list)
     in
     helper [] expr_list
   | MFTuple (first_elem, second_elem, other_elems) ->
     let all_elems = first_elem :: second_elem :: other_elems in
-    let* fresh_var = fresh in
-    let* body = k @@ imm_id (anf_id fresh_var) in
     let rec helper curr_list = function
       | head :: tail -> anf env head (fun imm -> helper (imm :: curr_list) tail)
-      | _ -> return @@ alet (anf_id fresh_var) (ctuple @@ Base.List.rev curr_list) body
+      | _ -> k (imm_tuple @@ Base.List.rev curr_list)
     in
     helper [] all_elems
   | MFIf (condition, true_branch, false_branch) ->
@@ -135,6 +135,7 @@ let rec anf (env : (string, unique_id, Base.String.comparator_witness) Base.Map.
   | MFLetIn (first_declaration, other_declarations, body) ->
     let* fresh_var = fresh in
     let name, expr = first_declaration in
+    let name = process_id name in
     let new_env = Base.Map.set env ~key:name ~data:(anf_id fresh_var) in
     anf env expr (fun imm_expr ->
       match other_declarations with
@@ -164,6 +165,7 @@ let process_declaration env declaration =
     let* global_scope_f = gen_global_scope_function env name args_list expr in
     return global_scope_f
   | MFRecursiveDeclaration (name, args_list, expr) ->
+    let name = process_id name in
     let env = Base.Map.set env ~key:name ~data:(global_scope_id name) in
     let* global_scope_f = gen_global_scope_function env name args_list expr in
     return global_scope_f
@@ -173,16 +175,21 @@ let anf_conversion program =
   let rec helper env current_list = function
     | head :: tail ->
       let* ((name, _, _) as global_scope_f) = process_declaration env head in
+      let name = process_id name in
       let env = Base.Map.set env ~key:name ~data:(global_scope_id name) in
       helper env (global_scope_f :: current_list) tail
     | _ -> return @@ List.rev current_list
   in
   let env = Base.Map.empty (module Base.String) in
-  let env = Base.Map.set env ~key:"`head" ~data:(global_scope_id "`head") in
-  let env = Base.Map.set env ~key:"`tail" ~data:(global_scope_id "`tail") in
-  let env = Base.Map.set env ~key:"`length" ~data:(global_scope_id "`length") in
-  let env = Base.Map.set env ~key:"`at_list" ~data:(global_scope_id "`at_list") in
-  let env = Base.Map.set env ~key:"`at_tuple" ~data:(global_scope_id "`at_tuple") in
+  let env =
+    Base.Map.set env ~key:"peducoml_field" ~data:(global_scope_id "peducoml_field")
+  in
+  let env =
+    Base.Map.set env ~key:"peducoml_tail" ~data:(global_scope_id "peducoml_tail")
+  in
+  let env =
+    Base.Map.set env ~key:"peducoml_length" ~data:(global_scope_id "peducoml_length")
+  in
   helper env [] program
 ;;
 

@@ -108,9 +108,7 @@ let closure_conversion global_scope =
       let arg = closure_expression env global_scope arg in
       eapplication func arg
     | EList expr_list ->
-      let expr_list =
-        Base.List.map expr_list ~f:(fun expr -> closure_expression env global_scope expr)
-      in
+      let expr_list = Base.List.map expr_list ~f:(closure_expression env global_scope) in
       elist expr_list
     | EConstructList (head, tail) ->
       let head = closure_expression env global_scope head in
@@ -120,8 +118,7 @@ let closure_conversion global_scope =
       let first_elem = closure_expression env global_scope first_elem in
       let second_elem = closure_expression env global_scope second_elem in
       let other_elems =
-        Base.List.map other_elems ~f:(fun elem ->
-          closure_expression env global_scope elem)
+        Base.List.map other_elems ~f:(closure_expression env global_scope)
       in
       etuple first_elem second_elem other_elems
     | EIf (expr, true_branch, false_branch) ->

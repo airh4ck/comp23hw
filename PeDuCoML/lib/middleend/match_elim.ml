@@ -46,15 +46,14 @@ let mfrecursivedeclaration name arguments body =
 open Lambda_lift
 
 let rec rewrite_match expr =
-  let rt_head = mfapplication (mfidentifier "`head") in
-  let rt_tail = mfapplication (mfidentifier "`tail") in
-  let rt_length = mfapplication (mfidentifier "`length") in
-  let rt_at_list lst idx =
-    mfapplication (mfapplication (mfidentifier "`at_list") lst) (mfliteral @@ lint idx)
+  let rt_tail = mfapplication (mfidentifier "peducoml_tail") in
+  let rt_length = mfapplication (mfidentifier "peducoml_length") in
+  let rt_field lst idx =
+    mfapplication
+      (mfapplication (mfidentifier "peducoml_field") lst)
+      (mfliteral @@ lint idx)
   in
-  let rt_at_tuple tuple idx =
-    mfapplication (mfapplication (mfidentifier "`at_tuple") tuple) (mfliteral @@ lint idx)
-  in
+  let rt_head lst = rt_field lst 0 in
   match expr with
   | CFIdentifier id -> mfidentifier id
   | CFLiteral literal -> mfliteral literal
@@ -116,7 +115,7 @@ let rec rewrite_match expr =
             pattern_list
             ~f:(fun (cond, ind) pattern ->
               let pattern_condition =
-                get_match_condition (rt_at_list matched_expression ind) pattern
+                get_match_condition (rt_field matched_expression ind) pattern
               in
               concat_conditions cond pattern_condition, ind + 1)
         in
@@ -129,7 +128,7 @@ let rec rewrite_match expr =
             pattern_list
             ~f:(fun (cond, ind) pattern ->
               let pattern_condition =
-                get_match_condition (rt_at_tuple matched_expression ind) pattern
+                get_match_condition (rt_field matched_expression ind) pattern
               in
               concat_conditions cond pattern_condition, ind + 1)
         in
@@ -156,13 +155,13 @@ let rec rewrite_match expr =
         let elem_list = first_elem :: second_elem :: other_elems in
         let rewritten, _ =
           Base.List.fold elem_list ~init:(action, 0) ~f:(fun (action, ind) elem ->
-            rewrite_pattern (rt_at_tuple matched ind) elem action, ind + 1)
+            rewrite_pattern (rt_field matched ind) elem action, ind + 1)
         in
         rewritten
       | PList pattern_list ->
         let rewritten, _ =
           Base.List.fold pattern_list ~init:(action, 0) ~f:(fun (action, ind) elem ->
-            rewrite_pattern (rt_at_list matched ind) elem action, ind + 1)
+            rewrite_pattern (rt_field matched ind) elem action, ind + 1)
         in
         rewritten
       | PConstructList (head, tail) ->

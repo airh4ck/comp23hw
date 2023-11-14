@@ -32,7 +32,7 @@
   >   g (h [1; 2; 3; 42])
   > EOF
   let `ll_0 ini acc = ini :: acc
-  let `ll_1 ``1 = match ``1 with | head :: tail -> tail
+  let `ll_1 arg_1 = match arg_1 with | head :: tail -> tail
   let f ini = (`ll_0 ini) (`ll_1 ([1; 2; 3; 42]))
   $ ./defunc_test.exe <<- EOF
   > let fib n = 
@@ -77,7 +77,7 @@
   > EOF
   let `ll_0 f s = f
   let `ll_1 f s = `ll_0 s
-  let `ll_2 x ``1 = match ``1 with | _ -> x
+  let `ll_2 x arg_1 = match arg_1 with | _ -> x
   let main x = `ll_1 (`ll_2 x)
   $ ./defunc_test.exe <<- EOF
   > let count_solutions_of_sq_equation a b c =
@@ -176,3 +176,10 @@
   let rec `ll_0 last1 last2 n = if n > 0 then ((`ll_0 last2) (last1 + last2)) (n - 1) else last2
   let phi n = ((`ll_0 1) 1) (n - 2)
   let main  = phi 10
+  $ ./defunc_test.exe <<- EOF
+  > let f (head :: tail) (x, y) = (x + y + head) :: tail
+  > 
+  > let main = f [1; 2; 3] (5, 10)
+  > EOF
+  let f arg_4 arg_5 = match arg_5 with | x, y -> match arg_4 with | head :: tail -> ((x + y) + head) :: tail
+  let main  = (f ([1; 2; 3])) (5, 10)

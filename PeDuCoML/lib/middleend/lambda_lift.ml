@@ -4,6 +4,7 @@
 
 open Ast
 open State
+open Util
 
 type cf_expr =
   | CFLiteral of literal
@@ -50,18 +51,33 @@ let cfrecursivedeclaration name arguments body =
 ;;
 
 let lambda_lift =
-  let rec helper current_expr current_arg_number args_list = function
-    | head :: tail ->
-      (match head with
-       | PIdentifier id -> helper current_expr current_arg_number (id :: args_list) tail
-       | _ ->
-         let arg_name = "``" ^ string_of_int current_arg_number in
-         helper
-           (ematchwith (eidentifier arg_name) (head, current_expr) [])
-           (current_arg_number + 1)
-           (arg_name :: args_list)
-           tail)
-    | _ -> List.rev args_list, current_expr
+  let eliminate_arg_patterns body pattern_list =
+    let generate_unique_arg_name used_names start =
+      let start_number = Base.Set.length used_names in
+      let rec find_unique current_number =
+        let current_name = start ^ string_of_int current_number in
+        match Base.Set.find used_names ~f:(fun elem -> elem = current_name) with
+        | None -> current_name
+        | _ -> find_unique (current_number + 1)
+      in
+      find_unique start_number
+    in
+    let rec helper used_names current_expr args_list = function
+      | head :: tail ->
+        (match head with
+         | PIdentifier id ->
+           helper (Base.Set.add used_names id) current_expr (id :: args_list) tail
+         | _ ->
+           let arg_name = generate_unique_arg_name used_names "arg_" in
+           helper
+             (Base.Set.add used_names arg_name)
+             (ematchwith (eidentifier arg_name) (head, current_expr) [])
+             (arg_name :: args_list)
+             tail)
+      | _ -> List.rev args_list, current_expr
+    in
+    let used_names = find_identifiers body in
+    helper used_names body [] pattern_list
   in
   let ll_expr expr =
     let get_constructor = function
@@ -73,9 +89,9 @@ let lambda_lift =
         | DRecursiveDeclaration (name, head :: tail, body) ) as original ->
         let pattern_list = head :: tail in
         let* fresh_var = fresh in
-        let fresh_name = "`ll_" ^ Base.Int.to_string fresh_var in
+        let fresh_name = "`ll_" ^ string_of_int fresh_var in
         let env = Base.Map.set env ~key:name ~data:fresh_name in
-        let args_list, body = helper body 1 [] pattern_list in
+        let args_list, body = eliminate_arg_patterns body pattern_list in
         let* body, lifted = ll_expr env lifted_decls body in
         let decl = get_constructor original in
         return
@@ -89,8 +105,8 @@ let lambda_lift =
     and ll_expr env lifted_decls = function
       | EFun (first_arg, other_args, body) ->
         let* fresh_var = fresh in
-        let id = "`ll_" ^ Base.Int.to_string fresh_var in
-        let args_list, body = helper body 1 [] (first_arg :: other_args) in
+        let id = "`ll_" ^ string_of_int fresh_var in
+        let args_list, body = eliminate_arg_patterns body (first_arg :: other_args) in
         let* body, lifted = ll_expr env lifted_decls body in
         return @@ (cfidentifier id, cfdeclaration id args_list body :: lifted)
       | ELetIn (first_decl, other_decls, body) ->
@@ -190,7 +206,7 @@ let lambda_lift =
        | ( DDeclaration (name, pattern_list, body)
          | DRecursiveDeclaration (name, pattern_list, body) ) as original ->
          let decl = get_constructor original in
-         let args_list, body = helper body 1 [] pattern_list in
+         let args_list, body = eliminate_arg_patterns body pattern_list in
          let* body, lifted_decls = ll_expr body in
          let* tail = ll_program tail in
          return @@ tail @ (decl name args_list body :: lifted_decls))

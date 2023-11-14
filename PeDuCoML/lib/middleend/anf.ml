@@ -71,7 +71,7 @@ open Match_elim
    ---------------------------------------*)
 
 let process_id id =
-  if id = "peducoml_field" || id = "peducoml_tail" || id = "peducoml_length"
+  if String.starts_with ~prefix:"peducoml_" id || String.starts_with ~prefix:"ll_" id
   then "user_" ^ id
   else if String.starts_with ~prefix:"`" id
   then String.sub id 1 (String.length id - 1)
@@ -149,26 +149,33 @@ let rec anf (env : (string, unique_id, Base.String.comparator_witness) Base.Map.
         return @@ alet (anf_id fresh_var) (cimm imm_expr) body)
 ;;
 
-let process_declaration env declaration =
+let process_declaration env =
   let update_map env args_list =
     Base.List.fold_right args_list ~init:(return env) ~f:(fun id acc ->
       let* fresh_var = fresh in
       let* acc = acc in
+      let id = process_id id in
       return @@ Base.Map.set acc ~key:id ~data:(anf_id fresh_var))
   in
-  let gen_imm_id env name = imm_id @@ Base.Map.find_exn env name in
+  let gen_imm_id env name =
+    let name = process_id name in
+    imm_id @@ Base.Map.find_exn env name
+  in
   let gen_global_scope_function env name args_list expr =
+    let name = process_id name in
     let* env = update_map env args_list in
     let* anf_representation = anf env expr (fun imm -> return @@ acimm imm) in
     return (name, List.map (gen_imm_id env) args_list, anf_representation)
   in
-  match declaration with
+  function
   | MFDeclaration (name, args_list, expr) ->
     let* global_scope_f = gen_global_scope_function env name args_list expr in
     return global_scope_f
   | MFRecursiveDeclaration (name, args_list, expr) ->
-    let name = process_id name in
-    let env = Base.Map.set env ~key:name ~data:(global_scope_id name) in
+    let processed_name = process_id name in
+    let env =
+      Base.Map.set env ~key:processed_name ~data:(global_scope_id processed_name)
+    in
     let* global_scope_f = gen_global_scope_function env name args_list expr in
     return global_scope_f
 ;;
@@ -177,7 +184,6 @@ let anf_conversion program =
   let rec helper env current_list = function
     | head :: tail ->
       let* ((name, _, _) as global_scope_f) = process_declaration env head in
-      let name = process_id name in
       let env = Base.Map.set env ~key:name ~data:(global_scope_id name) in
       helper env (global_scope_f :: current_list) tail
     | _ -> return @@ List.rev current_list

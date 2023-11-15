@@ -183,3 +183,10 @@
   > EOF
   let f arg_4 arg_5 = match arg_5 with | x, y -> match arg_4 with | head :: tail -> ((x + y) + head) :: tail
   let main  = (f ([1; 2; 3])) (5, 10)
+  $ ./defunc_test.exe <<- EOF
+  > let f (arg_5 :: arg_4) (x, y) = (x + y + arg_5) :: arg_4
+  > 
+  > let main = f [1; 2; 3] (5, 10)
+  > EOF
+  let f arg_6 arg_7 = match arg_7 with | x, y -> match arg_6 with | arg_5 :: arg_4 -> ((x + y) + arg_5) :: arg_4
+  let main  = (f ([1; 2; 3])) (5, 10)

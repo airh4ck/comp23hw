@@ -3,12 +3,14 @@
 (** SPDX-License-Identifier: LGPL-3.0-or-later *)
 
 open Anf
+open Ast
 open Llvm
 
 let context = global_context ()
 let the_module = create_module context "PeDuCoML"
 let builder = builder context
 let i64 = i64_type context
+let i64_array = array_type i64
 
 (* let create_entry_block_alloca func var =
    let builder = Llvm.builder_at context (Llvm.instr_begin (Llvm.entry_block func)) in
@@ -45,8 +47,28 @@ let rec codegen_immexpr env = function
     ok @@ const_array i64 (Base.List.to_array arr)
 ;;
 
+let build_binary_operation = function
+  | Add -> build_add
+  | Sub -> build_sub
+  | Mul -> build_mul
+  (* TODO: which div? *)
+  | Div -> build_udiv
+  | Eq -> build_icmp Icmp.Eq
+  | NEq -> build_icmp Icmp.Ne
+  | GT -> build_icmp Icmp.Sgt
+  | GTE -> build_icmp Icmp.Sge
+  | LT -> build_icmp Icmp.Slt
+  | LTE -> build_icmp Icmp.Sle
+  | AND -> build_and
+  | OR -> build_or
+;;
+
 let codegen_cexpr env = function
   | CImm imm_expr -> codegen_immexpr env imm_expr
+  | CBinaryOperation (bop, left, right) ->
+    let* left = codegen_immexpr env left in
+    let* right = codegen_immexpr env right in
+    ok @@ build_binary_operation bop left right "boptmp" builder
   | _ -> failwith "TODO"
 ;;
 

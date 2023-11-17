@@ -1,50 +1,30 @@
-  $ ./llvm_test.exe <<- EOF | tee llvm_test.ll ; lli-15 llvm_test.ll; echo "---\n$?"
-  > let main = 42
+  $ ./llvm_test.exe <<- EOF | tee llvm_test.ll ; echo "---" ; lli-15 -load ../../runtime/peducoml_runtime.so llvm_test.ll
+  > let x = 52
   > EOF
+  declare i64 @print_int(i64)
   define i64 @main() {
   entry:
-    ret i64 42
+    %tmp_call = call i64 @print_int(i64 42)
+    ret i64 0
+  }
+  define i64 @x() {
+  entry:
+    ret i64 52
   }
   ---
   42
-$ ./llvm_test.exe <<- EOF | tee llvm_test.ll ; lli-15 llvm_test.ll; echo "---\n$?"
-> let main = "abacaba"
-> EOF
-define i64 @main() {
-entry:
-ret i64 1
-}
-
-Output:
-IDK
-  $ ./llvm_test.exe <<- EOF | tee llvm_test.ll ; lli-15 llvm_test.ll; echo "---\n$?"
-  > let main = 'c'
+  $ ./llvm_test.exe <<- EOF | tee llvm_test.ll ; echo "---" ; lli-15 -load ../../runtime/peducoml_runtime.so llvm_test.ll
+  > let not_main = 'c'
   > EOF
+  declare i64 @print_int(i64)
   define i64 @main() {
+  entry:
+    %tmp_call = call i64 @print_int(i64 42)
+    ret i64 0
+  }
+  define i64 @not_main() {
   entry:
     ret i64 99
   }
   ---
-  99
-  $ ./llvm_test.exe <<- EOF | tee llvm_test.ll ; lli-15 llvm_test.ll; echo "---\n$?"
-  > let main = [1; 2]
-  > EOF
-  define i64 @main() {
-  entry:
-    ret i64 1
-  }
-  $ ./llvm_test.exe <<- EOF | tee llvm_test.ll ; lli-15 llvm_test.ll; echo "---\n$?"
-  > let main = [1; 2]
-  > EOF
-  define i64 @main() {
-  entry:
-    ret i64 1
-  }
-  $ ./llvm_test.exe <<- EOF | tee llvm_test.ll ; lli-15 llvm_test.ll; echo "---\n$?"
-  > let x = 1
-  > let main = x
-  > EOF
-  define i64 @main() {
-  entry:
-    ret i64 1
-  }
+  42

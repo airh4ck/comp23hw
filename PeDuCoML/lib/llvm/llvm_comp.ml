@@ -10,7 +10,8 @@ let context = global_context ()
 let the_module = create_module context "PeDuCoML"
 let builder = builder context
 let i64 = i64_type context
-let i64_array = array_type i64
+(* let void = void_type context *)
+(* let i64_array = array_type i64 *)
 
 (* let create_entry_block_alloca func var =
    let builder = Llvm.builder_at context (Llvm.instr_begin (Llvm.entry_block func)) in
@@ -93,12 +94,28 @@ let codegen_global_scope_function env (func : global_scope_function) =
   ok func
 ;;
 
-let codegen =
+let rt = declare_function "print_int" (function_type i64 [| i64 |]) the_module
+
+let build_example =
+  let func = declare_function "main" (function_type i64 [||]) the_module in
+  let basic_block = append_block context "entry" func in
+  position_at_end basic_block builder;
+  let callee_type = function_type i64 [| i64 |] in
+  (* let callee = Option.get @@ lookup_function "print_int" the_module in *)
+  let callee = rt in
+  let arguments = [| const_int i64 42 |] in
+  let _ = build_call2 callee_type callee arguments "tmp_call" builder in
+  let _ = build_ret (const_int i64 0) builder in
+  func
+;;
+
+let codegen program =
   let rec codegen acc env = function
-    | [] -> ok acc
+    | [] -> ok @@ acc
     | head :: tail ->
       let* head = codegen_global_scope_function env head in
       codegen (head :: acc) env tail
   in
-  codegen [] Base.Map.Poly.empty
+  let* result = codegen [ build_example; rt ] Base.Map.Poly.empty program in
+  ok @@ Base.List.rev result
 ;;

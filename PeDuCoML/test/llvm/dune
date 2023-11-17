@@ -1,0 +1,7 @@
+(executable
+ (name llvm_test)
+ (modules llvm_test)
+ (libraries PeDuCoML.Lib stdio llvm))
+
+(cram
+ (deps ./llvm_test.exe))

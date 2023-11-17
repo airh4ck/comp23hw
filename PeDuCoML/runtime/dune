@@ -1,0 +1,5 @@
+(rule
+ (targets peducoml_runtime.so)
+ (deps runtime.c)
+ (action
+  (run gcc -shared %{deps} -o %{targets})))

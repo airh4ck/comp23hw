@@ -11,7 +11,6 @@ let pp_literal fmt = function
   | LString x -> fprintf fmt "%s" x
   | LChar x -> fprintf fmt "%c" x
   | LBool x -> fprintf fmt "%b" x
-  | LUnit -> fprintf fmt "()"
 ;;
 
 let pp_binary_operator fmt = function

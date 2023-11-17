@@ -10,7 +10,6 @@ type ground_type =
   | String
   | Char
   | Bool
-  | Unit
 [@@deriving eq, show { with_path = false }]
 
 type typ =
@@ -19,21 +18,6 @@ type typ =
   | TTuple of typ list (** int * int *)
   | TList of typ (** 'a list *)
   | TGround of ground_type (** int *)
-
-(* Ground types *)
-let int_typ = TGround Int
-let bool_typ = TGround Bool
-let string_typ = TGround String
-let unit_typ = TGround Unit
-let char_typ = TGround Char
-(* ------------ *)
-
-(* Smart constructors for types *)
-let tarrow left_type right_type = TArr (left_type, right_type)
-let ttuple type_list = TTuple type_list
-let tlist typ = TList typ
-let tvar n = TVar n
-(* ---------------------------- *)
 
 let rec pp_type fmt typ =
   let open Format in
@@ -47,8 +31,7 @@ let rec pp_type fmt typ =
      | Int -> fprintf fmt "int"
      | String -> fprintf fmt "string"
      | Char -> fprintf fmt "char"
-     | Bool -> fprintf fmt "bool"
-     | Unit -> fprintf fmt "unit")
+     | Bool -> fprintf fmt "bool")
   | TTuple value_list ->
     fprintf
       fmt

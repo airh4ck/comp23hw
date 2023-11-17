@@ -11,10 +11,10 @@
   $ ./closure_test.exe <<- EOF
   > let main k = 
   >   let add_k x y = (x + y) * k in
-  >   let waste_of_space = () in
+  >   let waste_of_space = 0 in
   >   (42 + add_k 42 (-42))
   > EOF
-  let main k = let add_k k x y = (x + y) * k in let waste_of_space  = () in 42 + (((add_k k) 42) (-42))
+  let main k = let add_k k x y = (x + y) * k in let waste_of_space  = 0 in 42 + (((add_k k) 42) (-42))
   $ ./closure_test.exe <<- EOF
   > let main k = 
   >   let add_k x y = (x + y) * k in

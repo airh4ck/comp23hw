@@ -3,6 +3,7 @@
   Ast
   Parser
   Pprintast
+  Pprintcf
   Inferencer
   Typing
   Util
@@ -10,8 +11,9 @@
   Pprintanf
   Closure_conversion
   Lambda_lift
-  Llvm_comp)
- (libraries angstrom llvm)
+  Match_elim
+  State)
+ (libraries angstrom)
  (preprocess
   (pps ppx_expect ppx_deriving.show ppx_deriving.eq))
  (inline_tests)
@@ -19,3 +21,5 @@
   (backend bisect_ppx))
  (name PeDuCoML)
  (public_name PeDuCoML.Lib))
+
+(include_subdirs unqualified)

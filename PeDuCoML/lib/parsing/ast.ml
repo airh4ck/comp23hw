@@ -9,7 +9,6 @@ type literal =
   | LString of string (** "42" *)
   | LChar of char (** '\n' *)
   | LBool of bool (** true *)
-  | LUnit (** () *)
 [@@deriving eq, show { with_path = false }]
 
 type binary_operator =
@@ -32,6 +31,14 @@ type unary_operator =
   | Not (** not true *)
 [@@deriving show { with_path = false }]
 
+type pattern =
+  | PLiteral of literal (** true *)
+  | PWildcard (** _ *)
+  | PTuple of pattern * pattern * pattern list (** (1, 2) *)
+  | PList of pattern list (** [a; b; c] *)
+  | PConstructList of pattern * pattern (** a :: [b; c] *)
+  | PIdentifier of id (** cool_variable *)
+
 type expression =
   | ELiteral of literal (** 123 *)
   | EBinaryOperation of binary_operator * expression * expression (** 1 + 3 *)
@@ -48,14 +55,6 @@ type expression =
   | EMatchWith of expression * (pattern * expression) * (pattern * expression) list
   (** match x with _ -> x *)
 
-and pattern =
-  | PLiteral of literal (** true *)
-  | PWildcard (** _ *)
-  | PTuple of pattern * pattern * pattern list (** (1, 2) *)
-  | PList of pattern list (** [a; b; c] *)
-  | PConstructList of pattern * pattern (** a :: [b; c] *)
-  | PIdentifier of id (** cool_variable *)
-
 and declaration =
   | DDeclaration of id * pattern list * expression (** let add x y = x + y *)
   | DRecursiveDeclaration of id * pattern list * expression
@@ -66,7 +65,6 @@ let lint x = LInt x
 let lstring x = LString x
 let lchar x = LChar x
 let lbool x = LBool x
-let lunit _ = LUnit
 
 (* Smart constructors for expressions *)
 let eliteral x = ELiteral x

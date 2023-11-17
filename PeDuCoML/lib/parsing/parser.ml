@@ -20,7 +20,6 @@ type dispatch =
   ; parse_conditional : dispatch -> expression Angstrom.t
   ; parse_matching : dispatch -> expression Angstrom.t
   ; parse_let_in : dispatch -> expression Angstrom.t
-  ; parse_expression : dispatch -> expression Angstrom.t
   ; parse_pwildcard : pattern Angstrom.t
   ; parse_ptuple : dispatch -> pattern Angstrom.t
   ; parse_plist : dispatch -> pattern Angstrom.t
@@ -91,14 +90,12 @@ let parse_literal constructor =
       let parse_bool_literal =
         string "true" <|> string "false" >>| bool_of_string >>| lbool
       in
-      let parse_unit_literal = string "()" >>| lunit in
       let parse_literal =
         choice
           [ parse_int_literal
           ; parse_string_literal
           ; parse_char_literal
           ; parse_bool_literal
-          ; parse_unit_literal
           ]
       in
       constructor <$> parse_literal)
@@ -598,23 +595,6 @@ let parse_list_constructing d =
 
 (* --------------------------- *)
 
-let parse_expression d =
-  choice
-    [ d.parse_tuple d
-    ; d.parse_list_constructing d
-    ; d.parse_binary_operation d
-    ; d.parse_unary_operation d
-    ; d.parse_list d
-    ; d.parse_application d
-    ; d.parse_fun d
-    ; d.parse_conditional d
-    ; d.parse_matching d
-    ; d.parse_let_in d
-    ; parse_literal
-    ; parse_identifier
-    ]
-;;
-
 let default =
   { parse_list_constructing
   ; parse_tuple
@@ -625,8 +605,7 @@ let default =
   ; parse_fun
   ; parse_conditional
   ; parse_matching
-  ; parse_let_in
-  ; parse_expression
+  ; parse_let_in (* ; parse_expression *)
   ; parse_pwildcard
   ; parse_ptuple
   ; parse_plist
@@ -636,21 +615,7 @@ let default =
   }
 ;;
 
-let parse_tuple = parse_tuple default
-let parse_list = parse_list default
-let parse_fun = parse_fun default
 let parse_declaration = parse_declaration default
-let parse_conditional = parse_conditional default
-let parse_matching = parse_matching default
-let parse_binary_operation = parse_binary_operation default
-let parse_let_in = parse_let_in default
-let parse_application = parse_application default
-let parse_unary_operation = parse_unary_operation default
-let parse_list_constructing = parse_list_constructing default
-let parse_expression = parse_expression default
-let parse_ptuple = parse_ptuple default
-let parse_plist = parse_plist default
-let parse_pconstruct_list = parse_pconstruct_list default
 
 (* Main parsing function *)
 let parse : input -> (declaration list, error_message) result =
@@ -743,17 +708,18 @@ let%test _ =
 
 (* 6 *)
 let%test _ =
-  parse " let main = () :: (()) :: ((())) :: (((()))) :: [] "
+  parse " let main = 0 :: (0) :: ((0)) :: (((0))) :: [] "
   = Result.ok
     @@ [ DDeclaration
            ( "main"
            , []
            , EConstructList
-               ( ELiteral LUnit
+               ( ELiteral (LInt 0)
                , EConstructList
-                   ( ELiteral LUnit
+                   ( ELiteral (LInt 0)
                    , EConstructList
-                       (ELiteral LUnit, EConstructList (ELiteral LUnit, EList [])) ) ) )
+                       (ELiteral (LInt 0), EConstructList (ELiteral (LInt 0), EList []))
+                   ) ) )
        ]
 ;;
 
@@ -966,7 +932,7 @@ let%test _ =
 
 (* 19 *)
 let%test _ =
-  parse " let main = ( 123\t, \"aaa\"\t, 'b'\n, true\t, ()\t ) "
+  parse " let main = ( 123\t, \"aaa\"\t, 'b'\n, true\t ) "
   = Result.ok
     @@ [ DDeclaration
            ( "main"
@@ -974,7 +940,7 @@ let%test _ =
            , ETuple
                ( ELiteral (LInt 123)
                , ELiteral (LString "aaa")
-               , [ ELiteral (LChar 'b'); ELiteral (LBool true); ELiteral LUnit ] ) )
+               , [ ELiteral (LChar 'b'); ELiteral (LBool true) ] ) )
        ]
 ;;
 
@@ -1009,7 +975,7 @@ let%test _ =
 
 (* 22 *)
 let%test _ =
-  parse " let main = f (g 5, h ()) (let x = 17 and y = 6 and z = 3 in x * y / z) "
+  parse " let main = f (g 5, h (0)) (let x = 17 and y = 6 and z = 3 in x * y / z) "
   = Result.ok
     @@ [ DDeclaration
            ( "main"
@@ -1019,7 +985,7 @@ let%test _ =
                    ( EIdentifier "f"
                    , ETuple
                        ( EApplication (EIdentifier "g", ELiteral (LInt 5))
-                       , EApplication (EIdentifier "h", ELiteral LUnit)
+                       , EApplication (EIdentifier "h", ELiteral (LInt 0))
                        , [] ) )
                , ELetIn
                    ( DDeclaration ("x", [], ELiteral (LInt 17))
@@ -1037,7 +1003,7 @@ let%test _ =
 let%test _ =
   parse
     " let main = func (if x > 0 && y < 0 then x * y else 0) (let f t = t * t * t in (f \
-     x) * (f x)) () "
+     x) * (f x)) ([]) "
   = Result.ok
     @@ [ DDeclaration
            ( "main"
@@ -1067,7 +1033,7 @@ let%test _ =
                            ( Mul
                            , EApplication (EIdentifier "f", EIdentifier "x")
                            , EApplication (EIdentifier "f", EIdentifier "x") ) ) )
-               , ELiteral LUnit ) )
+               , EList [] ) )
        ]
 ;;
 
@@ -1269,13 +1235,13 @@ let%test _ =
 
 (* 33 *)
 let%test _ =
-  parse "let f [(x, y); ((), _)] = 1"
+  parse "let f [(x, y); ((_), _)] = 1"
   = Result.ok
     @@ [ DDeclaration
            ( "f"
            , [ PList
                  [ PTuple (PIdentifier "x", PIdentifier "y", [])
-                 ; PTuple (PLiteral LUnit, PWildcard, [])
+                 ; PTuple (PWildcard, PWildcard, [])
                  ]
              ]
            , ELiteral (LInt 1) )
@@ -1344,7 +1310,7 @@ let%test _ =
 
 (* 39 *)
 let%test _ =
-  parse "let f = fun ([x] :: [y; [(), ([], [])]]) -> true"
+  parse "let f = fun ([x] :: [y; [(([])), ([], [])]]) -> true"
   = Result.ok
     @@ [ DDeclaration
            ( "f"
@@ -1354,9 +1320,7 @@ let%test _ =
                    ( PList [ PIdentifier "x" ]
                    , PList
                        [ PIdentifier "y"
-                       ; PList
-                           [ PTuple (PLiteral LUnit, PTuple (PList [], PList [], []), [])
-                           ]
+                       ; PList [ PTuple (PList [], PTuple (PList [], PList [], []), []) ]
                        ] )
                , []
                , ELiteral (LBool true) ) )
@@ -1404,7 +1368,7 @@ let%test _ =
 let%test _ =
   parse
     " let f x y z = match x, y, z with\n\
-    \  | (), [a, 1; (), _], (c, [d; _] :: _, []) -> true\n\
+    \  | _, [a, 1; (_), _], (c, [d; _] :: _, []) -> true\n\
     \  | _ -> false"
   = Result.ok
     @@ [ DDeclaration
@@ -1413,10 +1377,10 @@ let%test _ =
            , EMatchWith
                ( ETuple (EIdentifier "x", EIdentifier "y", [ EIdentifier "z" ])
                , ( PTuple
-                     ( PLiteral LUnit
+                     ( PWildcard
                      , PList
                          [ PTuple (PIdentifier "a", PLiteral (LInt 1), [])
-                         ; PTuple (PLiteral LUnit, PWildcard, [])
+                         ; PTuple (PWildcard, PWildcard, [])
                          ]
                      , [ PTuple
                            ( PIdentifier "c"

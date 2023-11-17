@@ -26,7 +26,7 @@ let print_llvm code =
        (match codegen anf with
         | Ok llvalue_list ->
           Base.List.iter llvalue_list ~f:(fun func ->
-            Format.printf "%s\n" (Llvm.string_of_llvalue func))
+            Format.printf "%s" (Llvm.string_of_llvalue func))
         | Error _ -> failwith "IDK")
      | Error err -> print_type_error err)
   | Error err -> Format.printf "%s\n" err

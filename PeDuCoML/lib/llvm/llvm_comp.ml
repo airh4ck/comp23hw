@@ -29,7 +29,7 @@ let string_of_unique_id = function
 let rec codegen_immexpr env = function
   | ImmInt num -> ok @@ const_int i64 num
   | ImmString str -> ok @@ const_string context str
-  | ImmChar c -> ok @@ const_string context (String.make 1 c)
+  | ImmChar c -> ok @@ const_int i64 (Base.Char.to_int c)
   | ImmBool v -> ok @@ const_int i64 (Bool.to_int v)
   | ImmId id ->
     (match Base.Map.Poly.find env id with

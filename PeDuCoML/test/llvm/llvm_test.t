@@ -40,3 +40,11 @@ IDK
   entry:
     ret i64 1
   }
+  $ ./llvm_test.exe <<- EOF | tee llvm_test.ll ; lli-15 llvm_test.ll; echo "---\n$?"
+  > let x = 1
+  > let main = x
+  > EOF
+  define i64 @main() {
+  entry:
+    ret i64 1
+  }

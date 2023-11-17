@@ -13,7 +13,8 @@
   Lambda_lift
   Match_elim
   State
-  Llvm_comp)
+  Llvm_comp
+  Pprint_comp_error)
  (libraries angstrom llvm)
  (preprocess
   (pps ppx_expect ppx_deriving.show ppx_deriving.eq))

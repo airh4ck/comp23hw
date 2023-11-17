@@ -10,6 +10,7 @@ open PeDuCoML.Closure_conversion
 open PeDuCoML.Lambda_lift
 open PeDuCoML.Match_elim
 open PeDuCoML.Llvm_comp
+open PeDuCoML.Pprint_comp_error
 
 let print_llvm code =
   match parse code with
@@ -27,7 +28,7 @@ let print_llvm code =
         | Ok llvalue_list ->
           Base.List.iter llvalue_list ~f:(fun func ->
             Format.printf "%s" (Llvm.string_of_llvalue func))
-        | Error _ -> failwith "IDK")
+        | Error err -> Format.printf "%a\n" pp_error err)
      | Error err -> print_type_error err)
   | Error err -> Format.printf "%s\n" err
 ;;

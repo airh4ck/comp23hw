@@ -12,8 +12,9 @@
   Closure_conversion
   Lambda_lift
   Match_elim
-  State)
- (libraries angstrom)
+  State
+  Llvm_comp)
+ (libraries angstrom llvm)
  (preprocess
   (pps ppx_expect ppx_deriving.show ppx_deriving.eq))
  (inline_tests)

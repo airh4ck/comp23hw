@@ -511,6 +511,8 @@ let infer =
   declaration_helper
 ;;
 
+open Peducoml_stdlib
+
 let check_types (program : declaration list) =
   let rec helper environment = function
     | head :: tail ->
@@ -537,11 +539,10 @@ let check_types (program : declaration list) =
          return @@ ((name, generalized_type) :: tail))
     | _ -> return []
   in
-  let print_int_scheme = Base.Set.empty (module Base.Int), tarrow int_typ int_typ in
-  let print_char_scheme = Base.Set.empty (module Base.Int), tarrow char_typ int_typ in
-  let env = TypeEnv.empty in
-  let env = TypeEnv.extend env "print_int" print_int_scheme in
-  let env = TypeEnv.extend env "print_char" print_char_scheme in
+  let env =
+    Base.List.fold stdlib ~init:TypeEnv.empty ~f:(fun acc (id, scheme) ->
+      TypeEnv.extend acc id scheme)
+  in
   helper env program
 ;;
 

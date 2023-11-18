@@ -180,6 +180,8 @@ let process_declaration env =
     return global_scope_f
 ;;
 
+open Peducoml_stdlib
+
 let anf_conversion program =
   let rec helper env current_list = function
     | head :: tail ->
@@ -198,8 +200,10 @@ let anf_conversion program =
   let env =
     Base.Map.set env ~key:"peducoml_length" ~data:(global_scope_id "peducoml_length")
   in
-  let env = Base.Map.set env ~key:"print_int" ~data:(global_scope_id "print_int") in
-  let env = Base.Map.set env ~key:"print_char" ~data:(global_scope_id "print_char") in
+  let env =
+    Base.List.fold stdlib ~init:env ~f:(fun acc (id, _) ->
+      Base.Map.set acc ~key:id ~data:(global_scope_id id))
+  in
   helper env [] program
 ;;
 

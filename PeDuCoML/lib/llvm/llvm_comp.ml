@@ -10,6 +10,7 @@ let context = global_context ()
 let the_module = create_module context "PeDuCoML"
 let builder = builder context
 let i64 = i64_type context
+let lookup_function_exn id llmodule = Option.get @@ lookup_function id llmodule
 (* let void = void_type context *)
 (* let i64_array = array_type i64 *)
 
@@ -35,9 +36,10 @@ let rec codegen_immexpr env = function
   | ImmChar c -> ok @@ const_int i64 (Base.Char.to_int c)
   | ImmBool v -> ok @@ const_int i64 (Bool.to_int v)
   | ImmId id ->
-    (match Base.Map.Poly.find env id with
-     | None -> error @@ UnboundVariable id
-     | Some llvalue -> ok @@ build_load2 i64 llvalue (string_of_unique_id id) builder)
+    (match Base.Map.Poly.find env id, id with
+     | _, GlobalScopeId id -> ok @@ lookup_function_exn id the_module
+     | None, _ -> error @@ UnboundVariable id
+     | Some llvalue, AnfId id -> ok @@ build_load2 i64 llvalue (string_of_int id) builder)
   | ImmList imm_list | ImmTuple imm_list ->
     let* arr =
       Base.List.fold_right imm_list ~init:(ok []) ~f:(fun imm acc ->
@@ -70,12 +72,22 @@ let codegen_cexpr env = function
     let* left = codegen_immexpr env left in
     let* right = codegen_immexpr env right in
     ok @@ build_binary_operation bop left right "boptmp" builder
+  | CApplication (func, arg) ->
+    let* callee = codegen_immexpr env func in
+    let* arg = codegen_immexpr env arg in
+    let fnty = function_type i64 [| i64 |] in
+    ok @@ build_call2 fnty callee [| arg |] "tmp_call1" builder
   | _ -> failwith "TODO"
 ;;
 
-let codegen_aexpr env = function
+let rec codegen_aexpr env = function
   | ACExpr cexpr -> codegen_cexpr env cexpr
-  | _ -> failwith "TODO"
+  | ALet (id, cexpr, aexpr) ->
+    let alloca = build_alloca i64 (string_of_unique_id id) builder in
+    let* cexpr = codegen_cexpr env cexpr in
+    build_store cexpr alloca builder |> ignore;
+    let env = Base.Map.Poly.set env ~key:id ~data:alloca in
+    codegen_aexpr env aexpr
 ;;
 
 let codegen_proto name args =
@@ -94,9 +106,9 @@ let codegen_global_scope_function env (func : global_scope_function) =
   ok func
 ;;
 
-let rt = declare_function "print_int" (function_type i64 [| i64 |]) the_module
+let rt_print_int = declare_function "print_int" (function_type i64 [| i64 |]) the_module
 
-let build_example =
+(* let build_example =
   let func = declare_function "main" (function_type i64 [||]) the_module in
   let basic_block = append_block context "entry" func in
   position_at_end basic_block builder;
@@ -107,7 +119,7 @@ let build_example =
   let _ = build_call2 callee_type callee arguments "tmp_call" builder in
   let _ = build_ret (const_int i64 0) builder in
   func
-;;
+;; *)
 
 let codegen program =
   let rec codegen acc env = function
@@ -116,6 +128,7 @@ let codegen program =
       let* head = codegen_global_scope_function env head in
       codegen (head :: acc) env tail
   in
-  let* result = codegen [ build_example; rt ] Base.Map.Poly.empty program in
+  (* let init_env = Base.Map.Poly.singleton (GlobalScopeId "print_int") rt_print_int in *)
+  let* result = codegen [ rt_print_int ] Base.Map.Poly.empty program in
   ok @@ Base.List.rev result
 ;;

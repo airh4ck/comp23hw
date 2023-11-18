@@ -199,6 +199,7 @@ let anf_conversion program =
     Base.Map.set env ~key:"peducoml_length" ~data:(global_scope_id "peducoml_length")
   in
   let env = Base.Map.set env ~key:"print_int" ~data:(global_scope_id "print_int") in
+  let env = Base.Map.set env ~key:"print_char" ~data:(global_scope_id "print_char") in
   helper env [] program
 ;;
 

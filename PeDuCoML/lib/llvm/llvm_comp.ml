@@ -106,8 +106,6 @@ let codegen_global_scope_function env (func : global_scope_function) =
   ok func
 ;;
 
-let rt_print_int = declare_function "print_int" (function_type i64 [| i64 |]) the_module
-
 (* let build_example =
   let func = declare_function "main" (function_type i64 [||]) the_module in
   let basic_block = append_block context "entry" func in
@@ -122,6 +120,12 @@ let rt_print_int = declare_function "print_int" (function_type i64 [| i64 |]) th
 ;; *)
 
 let codegen program =
+  let rt_print_int =
+    declare_function "print_int" (function_type i64 [| i64 |]) the_module
+  in
+  let rt_print_char =
+    declare_function "print_char" (function_type i64 [| i64 |]) the_module
+  in
   let rec codegen acc env = function
     | [] -> ok @@ acc
     | head :: tail ->
@@ -129,6 +133,6 @@ let codegen program =
       codegen (head :: acc) env tail
   in
   (* let init_env = Base.Map.Poly.singleton (GlobalScopeId "print_int") rt_print_int in *)
-  let* result = codegen [ rt_print_int ] Base.Map.Poly.empty program in
+  let* result = codegen [ rt_print_int; rt_print_char ] Base.Map.Poly.empty program in
   ok @@ Base.List.rev result
 ;;

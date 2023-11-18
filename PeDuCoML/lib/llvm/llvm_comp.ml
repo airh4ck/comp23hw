@@ -54,7 +54,6 @@ let build_binary_operation = function
   | Add -> build_add
   | Sub -> build_sub
   | Mul -> build_mul
-  (* TODO: which div? *)
   | Div -> build_udiv
   | Eq -> build_icmp Icmp.Eq
   | NEq -> build_icmp Icmp.Ne
@@ -71,7 +70,9 @@ let codegen_cexpr env = function
   | CBinaryOperation (bop, left, right) ->
     let* left = codegen_immexpr env left in
     let* right = codegen_immexpr env right in
-    ok @@ build_binary_operation bop left right "boptmp" builder
+    let rez = build_binary_operation bop left right "boptmp" builder in
+    let rez = build_zext rez i64 "zext" builder in
+    ok @@ rez
   | CApplication (func, arg) ->
     let* callee = codegen_immexpr env func in
     let* arg = codegen_immexpr env arg in

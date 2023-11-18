@@ -537,7 +537,11 @@ let check_types (program : declaration list) =
          return @@ ((name, generalized_type) :: tail))
     | _ -> return []
   in
-  helper TypeEnv.empty program
+  let (print_int_scheme : scheme) =
+    Base.Set.empty (module Base.Int), tarrow int_typ int_typ
+  in
+  let init_env = TypeEnv.extend TypeEnv.empty "print_int" print_int_scheme in
+  helper init_env program
 ;;
 
 let run_inference expression = Result.map snd (run (infer TypeEnv.empty expression))

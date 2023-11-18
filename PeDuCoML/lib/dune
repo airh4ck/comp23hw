@@ -14,7 +14,8 @@
   Match_elim
   State
   Llvm_comp
-  Pprint_comp_error)
+  Pprint_comp_error
+  Peducoml_stdlib)
  (libraries angstrom llvm)
  (preprocess
   (pps ppx_expect ppx_deriving.show ppx_deriving.eq))

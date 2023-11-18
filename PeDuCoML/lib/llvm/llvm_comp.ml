@@ -11,6 +11,7 @@ let the_module = create_module context "PeDuCoML"
 let builder = builder context
 let i64 = i64_type context
 let lookup_function_exn id llmodule = Option.get @@ lookup_function id llmodule
+(* let build_call fn args name = build_call2 (type_of fn) fn args name builder *)
 (* let void = void_type context *)
 (* let i64_array = array_type i64 *)
 
@@ -76,8 +77,27 @@ let codegen_cexpr env = function
   | CApplication (func, arg) ->
     let* callee = codegen_immexpr env func in
     let* arg = codegen_immexpr env arg in
-    let fnty = function_type i64 [| i64 |] in
-    ok @@ build_call2 fnty callee [| arg |] "tmp_call1" builder
+    let arity = params callee |> Base.Array.length in
+    if arity == 1
+    then (
+      let fnty = function_type i64 [| i64 |] in
+      ok @@ build_call2 fnty callee [| arg |] "tmp_call1" builder)
+    else (
+      let func_ptr =
+        let alloc_closure = lookup_function_exn "peducoml_alloc_closure" the_module in
+        let alloc_ty = function_type i64 [| i64; i64 |] in
+        build_call2
+          alloc_ty
+          alloc_closure
+          [| build_pointercast callee i64 "funcptr" builder
+           ; params callee |> Base.Array.length |> const_int i64
+          |]
+          "peducoml_alloc_closure"
+          builder
+      in
+      let apply = lookup_function_exn "peducoml_apply" the_module in
+      let apply_ty = function_type i64 [| i64; i64 |] in
+      ok @@ build_call2 apply_ty apply [| func_ptr; arg |] "peducoml_apply" builder)
   | _ -> failwith "TODO"
 ;;
 
@@ -91,34 +111,35 @@ let rec codegen_aexpr env = function
     codegen_aexpr env aexpr
 ;;
 
-let codegen_proto name args =
-  let arg_types = Array.make (Base.List.length args) i64 in
-  let function_type = function_type i64 arg_types in
-  ok @@ declare_function name function_type the_module
-;;
-
 let codegen_global_scope_function env (func : global_scope_function) =
   let id, arg_list, body = func in
-  let* func = codegen_proto id arg_list in
+  let fnty = function_type i64 (Array.make (Base.List.length arg_list) i64) in
+  let func = declare_function id fnty the_module in
+  Base.Array.iter
+    (Base.Array.zip_exn (Base.List.to_array arg_list) (params func))
+    ~f:(fun (name, value) ->
+      match name with
+      | ImmId id -> set_value_name (string_of_unique_id id) value
+      | _ -> failwith "Do arguments need to be immexprs?");
   let basic_block = append_block context "entry" func in
   position_at_end basic_block builder;
-  let* return_val = codegen_aexpr env body in
+  let env = Base.Map.Poly.set env ~key:(GlobalScopeId id) ~data:func in
+  let env_with_args =
+    Base.Array.fold_right
+      (Base.Array.zip_exn (Base.List.to_array arg_list) (params func))
+      ~init:env
+      ~f:(fun (name, value) acc ->
+        match name with
+        | ImmId id ->
+          let alloca = build_alloca i64 (string_of_unique_id id) builder in
+          build_store value alloca builder |> ignore;
+          Base.Map.Poly.set acc ~key:id ~data:alloca
+        | _ -> failwith "Do they?")
+  in
+  let* return_val = codegen_aexpr env_with_args body in
   let _ = build_ret return_val builder in
-  ok func
+  ok (func, env)
 ;;
-
-(* let build_example =
-  let func = declare_function "main" (function_type i64 [||]) the_module in
-  let basic_block = append_block context "entry" func in
-  position_at_end basic_block builder;
-  let callee_type = function_type i64 [| i64 |] in
-  (* let callee = Option.get @@ lookup_function "print_int" the_module in *)
-  let callee = rt in
-  let arguments = [| const_int i64 42 |] in
-  let _ = build_call2 callee_type callee arguments "tmp_call" builder in
-  let _ = build_ret (const_int i64 0) builder in
-  func
-;; *)
 
 open Peducoml_stdlib
 
@@ -127,10 +148,18 @@ let codegen program =
     Base.List.map stdlib ~f:(fun (id, _) ->
       declare_function id (function_type i64 [| i64 |]) the_module)
   in
+  let env =
+    declare_function
+      "peducoml_alloc_closure"
+      (function_type i64 [| i64; i64 |])
+      the_module
+    :: declare_function "peducoml_apply" (function_type i64 [| i64; i64 |]) the_module
+    :: env
+  in
   let rec codegen acc env = function
     | [] -> ok @@ acc
     | head :: tail ->
-      let* head = codegen_global_scope_function env head in
+      let* head, env = codegen_global_scope_function env head in
       codegen (head :: acc) env tail
   in
   (* let init_env = Base.Map.Poly.singleton (GlobalScopeId "print_int") rt_print_int in *)

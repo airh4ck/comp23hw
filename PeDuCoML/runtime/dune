@@ -2,4 +2,4 @@
  (targets peducoml_runtime.so)
  (deps runtime.c)
  (action
-  (run gcc -shared %{deps} -o %{targets})))
+  (run gcc -fPIC -shared %{deps} -o %{targets})))

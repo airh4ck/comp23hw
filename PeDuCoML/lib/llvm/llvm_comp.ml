@@ -40,7 +40,7 @@ let rec codegen_immexpr env = function
     (match Base.Map.Poly.find env id, id with
      | _, GlobalScopeId id -> ok @@ lookup_function_exn id the_module
      | None, _ -> error @@ UnboundVariable id
-     | Some llvalue, AnfId id -> ok @@ build_load2 i64 llvalue (string_of_int id) builder)
+     | Some llvalue, AnfId id -> ok @@ build_load i64 llvalue (string_of_int id) builder)
   | ImmList imm_list | ImmTuple imm_list ->
     let* arr =
       Base.List.fold_right imm_list ~init:(ok []) ~f:(fun imm acc ->
@@ -81,12 +81,12 @@ let codegen_cexpr env = function
     if arity == 1
     then (
       let fnty = function_type i64 [| i64 |] in
-      ok @@ build_call2 fnty callee [| arg |] "tmp_call1" builder)
+      ok @@ build_call fnty callee [| arg |] "tmp_call1" builder)
     else (
       let func_ptr =
         let alloc_closure = lookup_function_exn "peducoml_alloc_closure" the_module in
         let alloc_ty = function_type i64 [| i64; i64 |] in
-        build_call2
+        build_call
           alloc_ty
           alloc_closure
           [| build_pointercast callee i64 "funcptr" builder
@@ -97,7 +97,7 @@ let codegen_cexpr env = function
       in
       let apply = lookup_function_exn "peducoml_apply" the_module in
       let apply_ty = function_type i64 [| i64; i64 |] in
-      ok @@ build_call2 apply_ty apply [| func_ptr; arg |] "peducoml_apply" builder)
+      ok @@ build_call apply_ty apply [| func_ptr; arg |] "peducoml_apply" builder)
   | _ -> failwith "TODO"
 ;;
 

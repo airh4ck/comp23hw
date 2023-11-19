@@ -123,7 +123,6 @@ let codegen_global_scope_function env (func : global_scope_function) =
       | _ -> failwith "Do arguments need to be immexprs?");
   let basic_block = append_block context "entry" func in
   position_at_end basic_block builder;
-  let env = Base.Map.Poly.set env ~key:(GlobalScopeId id) ~data:func in
   let env_with_args =
     Base.Array.fold_right
       (Base.Array.zip_exn (Base.List.to_array arg_list) (params func))

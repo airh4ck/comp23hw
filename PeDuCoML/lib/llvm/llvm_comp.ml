@@ -109,32 +109,26 @@ let codegen_cexpr env = function
         (show_binary_operator bop ^ "result_n")
         builder
     in
-    let rez = build_zext result i64 "zext_n" builder in
-    ok @@ rez
+    let result = build_zext result i64 "zext_n" builder in
+    ok result
   | CApplication (func, arg) ->
     let* callee = codegen_immexpr env func in
     let* arg = codegen_immexpr env arg in
-    let arity = params callee |> Base.Array.length in
-    if arity == 1
-    then (
-      let fnty = function_type i64 [| i64 |] in
-      ok @@ build_call fnty callee [| arg |] "function_call_n" builder)
-    else (
-      let func_ptr =
-        let alloc_closure = lookup_function_exn "peducoml_alloc_closure" the_module in
-        let fnty = function_type i64 [| i64; i64 |] in
-        build_call
-          fnty
-          alloc_closure
-          [| build_pointercast callee i64 "ptr_to_i64_n" builder
-           ; params callee |> Base.Array.length |> const_int i64
-          |]
-          "peducoml_alloc_closure_n"
-          builder
-      in
-      let apply = lookup_function_exn "peducoml_apply" the_module in
+    let func_ptr =
+      let alloc_closure = lookup_function_exn "peducoml_alloc_closure" the_module in
       let fnty = function_type i64 [| i64; i64 |] in
-      ok @@ build_call fnty apply [| func_ptr; arg |] "peducoml_apply_n" builder)
+      build_call
+        fnty
+        alloc_closure
+        [| build_pointercast callee i64 "ptr_to_i64_n" builder
+         ; params callee |> Base.Array.length |> const_int i64
+        |]
+        "peducoml_alloc_closure_n"
+        builder
+    in
+    let apply = lookup_function_exn "peducoml_apply" the_module in
+    let fnty = function_type i64 [| i64; i64 |] in
+    ok @@ build_call fnty apply [| func_ptr; arg |] "peducoml_apply_n" builder
   | _ -> failwith "TODO"
 ;;
 

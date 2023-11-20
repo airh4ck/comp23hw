@@ -2,6 +2,8 @@
 #include <stdint.h>
 #include <malloc.h>
 
+// Application processing
+
 typedef struct closure_struct
 {
     int64_t (*func)();
@@ -10,115 +12,217 @@ typedef struct closure_struct
     int64_t *applied_args;
 } closure;
 
-// static closure *stored_closures[8];
-// static int stored_closures_len = 0;
-
-// extern int get_closure(int64_t ptr)
-// {
-//     for (int i = 0; i < stored_closures_len; i++)
-//     {
-//         if (ptr == (int64_t)stored_closures[i])
-//         {
-//             return i;
-//         }
-//     }
-//     return -1;
-// }
-
 extern int64_t peducoml_alloc_closure(int64_t ptr, int64_t total_args)
 {
-
-    // int index = get_closure(ptr);
-    // if (index == -1)
-    // {
-    //     closure *cl = (closure *)malloc(sizeof(closure));
-    //     cl->func = (int64_t(*)(int64_t, int64_t, int64_t, int64_t))ptr;
-    //     cl->total_args = total_args;
-    //     cl->applied_args = NULL;
-    //     cl->len_applied_args = 0;
-    //     stored_closures[stored_closures_len++] = cl;
-    //     return (int64_t)cl;
-    // }
-    // return (int64_t)stored_closures[index];
-}
-
-static int64_t peducoml_apply2(closure *cl)
-{
-    return cl->func(cl->applied_args[0], cl->applied_args[1], 0, 0);
-}
-static int64_t peducoml_apply3(closure *cl)
-{
-    return cl->func(cl->applied_args[0], cl->applied_args[1], cl->applied_args[2], 0);
-}
-static int64_t peducoml_apply4(closure *cl)
-{
-    return cl->func(cl->applied_args[0], cl->applied_args[1], cl->applied_args[2], cl->applied_args[3]);
-}
-
-extern int64_t peducoml_apply(int64_t c, int64_t arg)
-{
-    closure *cl = (closure *)c;
-    if (cl->applied_args == NULL)
+    // Explanation: this function returns pointer + 1. Since the pointer is even, this value is odd.
+    // So, if (ptr % 2) == 1, the ptr points to an allocated closure. Otherwise, ptr points to some function.
+    if (ptr % 2 == 0)
     {
-        cl->applied_args = (int64_t *)malloc(4 * sizeof(int64_t));
+        closure *closure_ptr = (closure *)malloc(sizeof(closure));
+        closure_ptr->func = (int64_t(*)())ptr;
+        closure_ptr->total_args = total_args;
+        closure_ptr->len_applied_args = 0;
+        closure_ptr->applied_args = (int64_t *)malloc(total_args * sizeof(int64_t));
+        return (int64_t)closure_ptr + (int64_t)1;
     }
-    cl->applied_args[cl->len_applied_args] = arg;
-    cl->len_applied_args++;
+    return ptr;
+}
 
-    if (cl->len_applied_args == cl->total_args)
+static int64_t peducoml_apply1(closure *closure_ptr)
+{
+    return closure_ptr->func(
+        closure_ptr->applied_args[0]);
+}
+
+static int64_t peducoml_apply2(closure *closure_ptr)
+{
+    return closure_ptr->func(
+        closure_ptr->applied_args[0],
+        closure_ptr->applied_args[1]);
+}
+
+static int64_t peducoml_apply3(closure *closure_ptr)
+{
+    return closure_ptr->func(
+        closure_ptr->applied_args[0],
+        closure_ptr->applied_args[1],
+        closure_ptr->applied_args[2]);
+}
+
+static int64_t peducoml_apply4(closure *closure_ptr)
+{
+    return closure_ptr->func(
+        closure_ptr->applied_args[0],
+        closure_ptr->applied_args[1],
+        closure_ptr->applied_args[2],
+        closure_ptr->applied_args[3]);
+}
+
+static int64_t peducoml_apply5(closure *closure_ptr)
+{
+    return closure_ptr->func(
+        closure_ptr->applied_args[0],
+        closure_ptr->applied_args[1],
+        closure_ptr->applied_args[2],
+        closure_ptr->applied_args[3],
+        closure_ptr->applied_args[4]);
+}
+
+static int64_t peducoml_apply6(closure *closure_ptr)
+{
+    return closure_ptr->func(
+        closure_ptr->applied_args[0],
+        closure_ptr->applied_args[1],
+        closure_ptr->applied_args[2],
+        closure_ptr->applied_args[3],
+        closure_ptr->applied_args[4],
+        closure_ptr->applied_args[5]);
+}
+
+static int64_t peducoml_apply7(closure *closure_ptr)
+{
+    return closure_ptr->func(
+        closure_ptr->applied_args[0],
+        closure_ptr->applied_args[1],
+        closure_ptr->applied_args[2],
+        closure_ptr->applied_args[3],
+        closure_ptr->applied_args[4],
+        closure_ptr->applied_args[5],
+        closure_ptr->applied_args[6]);
+}
+
+static int64_t peducoml_apply8(closure *closure_ptr)
+{
+    return closure_ptr->func(
+        closure_ptr->applied_args[0],
+        closure_ptr->applied_args[1],
+        closure_ptr->applied_args[2],
+        closure_ptr->applied_args[3],
+        closure_ptr->applied_args[4],
+        closure_ptr->applied_args[5],
+        closure_ptr->applied_args[6],
+        closure_ptr->applied_args[7]);
+}
+
+static int64_t peducoml_apply9(closure *closure_ptr)
+{
+    return closure_ptr->func(
+        closure_ptr->applied_args[0],
+        closure_ptr->applied_args[1],
+        closure_ptr->applied_args[2],
+        closure_ptr->applied_args[3],
+        closure_ptr->applied_args[4],
+        closure_ptr->applied_args[5],
+        closure_ptr->applied_args[6],
+        closure_ptr->applied_args[7],
+        closure_ptr->applied_args[8]);
+}
+
+static int64_t peducoml_apply10(closure *closure_ptr)
+{
+    return closure_ptr->func(
+        closure_ptr->applied_args[0],
+        closure_ptr->applied_args[1],
+        closure_ptr->applied_args[2],
+        closure_ptr->applied_args[3],
+        closure_ptr->applied_args[4],
+        closure_ptr->applied_args[5],
+        closure_ptr->applied_args[6],
+        closure_ptr->applied_args[7],
+        closure_ptr->applied_args[8],
+        closure_ptr->applied_args[9]);
+}
+
+static int64_t peducoml_apply11(closure *closure_ptr)
+{
+    return closure_ptr->func(
+        closure_ptr->applied_args[0],
+        closure_ptr->applied_args[1],
+        closure_ptr->applied_args[2],
+        closure_ptr->applied_args[3],
+        closure_ptr->applied_args[4],
+        closure_ptr->applied_args[5],
+        closure_ptr->applied_args[6],
+        closure_ptr->applied_args[7],
+        closure_ptr->applied_args[8],
+        closure_ptr->applied_args[9],
+        closure_ptr->applied_args[10]);
+}
+
+static int64_t peducoml_apply12(closure *closure_ptr)
+{
+    return closure_ptr->func(
+        closure_ptr->applied_args[0],
+        closure_ptr->applied_args[1],
+        closure_ptr->applied_args[2],
+        closure_ptr->applied_args[3],
+        closure_ptr->applied_args[4],
+        closure_ptr->applied_args[5],
+        closure_ptr->applied_args[6],
+        closure_ptr->applied_args[7],
+        closure_ptr->applied_args[8],
+        closure_ptr->applied_args[9],
+        closure_ptr->applied_args[10],
+        closure_ptr->applied_args[11]);
+}
+
+extern int64_t peducoml_apply(int64_t ptr, int64_t arg)
+{
+    closure *closure_ptr = (closure *)(ptr - (int64_t)1);
+    closure_ptr->applied_args[closure_ptr->len_applied_args] = arg;
+    closure_ptr->len_applied_args++;
+    if (closure_ptr->len_applied_args == closure_ptr->total_args)
     {
-        int64_t rez = INT64_MIN;
-        switch (cl->len_applied_args)
+        int64_t result = 0;
+        switch (closure_ptr->total_args)
         {
+        case 1:
+            result = peducoml_apply1(closure_ptr);
+            break;
         case 2:
-            rez = peducoml_apply2(cl);
+            result = peducoml_apply2(closure_ptr);
             break;
         case 3:
-            rez = peducoml_apply3(cl);
+            result = peducoml_apply3(closure_ptr);
             break;
         case 4:
-            rez = peducoml_apply4(cl);
+            result = peducoml_apply4(closure_ptr);
+            break;
+        case 5:
+            result = peducoml_apply5(closure_ptr);
+            break;
+        case 6:
+            result = peducoml_apply6(closure_ptr);
+            break;
+        case 7:
+            result = peducoml_apply7(closure_ptr);
+            break;
+        case 8:
+            result = peducoml_apply8(closure_ptr);
+            break;
+        case 9:
+            result = peducoml_apply9(closure_ptr);
+            break;
+        case 10:
+            result = peducoml_apply10(closure_ptr);
+            break;
+        case 11:
+            result = peducoml_apply11(closure_ptr);
+            break;
+        case 12:
+            result = peducoml_apply12(closure_ptr);
             break;
         default:
             break;
         }
-        free(cl->applied_args);
-        free(cl);
 
-        return rez;
+        free(closure_ptr->applied_args);
+        free(closure_ptr);
+
+        return result;
     }
 
-    return (int64_t)cl;
-}
-
-extern int print_int(int x)
-{
-    printf("%d", x);
-    return 0;
-}
-
-extern int print_char(int c)
-{
-    putchar(c);
-    return 0;
-}
-
-extern int print_bool(int b)
-{
-    if (b > 0)
-    {
-        puts("true");
-    }
-    else
-    {
-        puts("false");
-    }
-    return 0;
-}
-
-extern int print_new_line()
-{
-    printf("\n");
+    return ptr;
 }
 
 // List processing
@@ -151,7 +255,7 @@ extern int64_t peducoml_field(int64_t list_ptr, int64_t index)
 {
     node *head = (node *)list_ptr;
     node *current = head->next;
-    for (int i = 0; i < index; i++)
+    for (int64_t i = 0; i < index; i++)
     {
         current = current->next;
     }
@@ -184,7 +288,7 @@ extern int64_t print_list(int64_t list_ptr)
         return 0;
     }
     node *current = head->next;
-    for (int i = 0; i < head->data - 1; i++)
+    for (int64_t i = 0; i < head->data - 1; i++)
     {
         printf("%d; ", current->data);
         current = current->next;
@@ -215,10 +319,43 @@ extern int64_t print_tuple(int64_t ptr)
     int64_t *tuple_ptr = (int64_t *)ptr;
     int64_t length = tuple_ptr[0];
     printf("(");
-    for (int i = 1; i < length; i++)
+    for (int64_t i = 1; i < length; i++)
     {
         printf("%d, ", tuple_ptr[i]);
     }
     printf("%d)", tuple_ptr[length]);
+    return 0;
+}
+
+// Stdlib functions
+
+extern int64_t print_int(int64_t x)
+{
+    printf("%d", x);
+    return 0;
+}
+
+extern int64_t print_char(int64_t c)
+{
+    putchar(c);
+    return 0;
+}
+
+extern int64_t print_bool(int64_t b)
+{
+    if (b > 0)
+    {
+        puts("true");
+    }
+    else
+    {
+        puts("false");
+    }
+    return 0;
+}
+
+extern int64_t print_new_line()
+{
+    printf("\n");
     return 0;
 }

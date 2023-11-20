@@ -7,6 +7,7 @@ open Typing
 let print_int_scheme = Base.Set.empty (module Base.Int), TArr (TGround Int, TGround Int)
 let print_char_scheme = Base.Set.empty (module Base.Int), TArr (TGround Char, TGround Int)
 let print_bool_scheme = Base.Set.empty (module Base.Int), TArr (TGround Bool, TGround Int)
+let print_new_line_scheme = Base.Set.empty (module Base.Int), TGround Int
 
 let print_list_scheme =
   Base.Set.empty (module Base.Int), TArr (TList (TVar (-1)), TGround Int)
@@ -20,5 +21,6 @@ let stdlib =
   ; "print_bool", print_bool_scheme
   ; "print_list", print_list_scheme
   ; "print_tuple", print_tuple_scheme
+  ; "print_new_line", print_new_line_scheme
   ]
 ;;

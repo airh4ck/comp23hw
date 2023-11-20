@@ -1,6 +1,7 @@
   $ ./llvm_test.exe <<- EOF | tee llvm_test.ll ; echo "---" ; lli -load ../../runtime/peducoml_runtime.so llvm_test.ll
   > let main = print_int 42
   > EOF
+  declare i64 @print_new_line(i64)
   declare i64 @print_tuple(i64)
   declare i64 @print_list(i64)
   declare i64 @print_bool(i64)
@@ -18,8 +19,9 @@
   define i64 @main() {
   entry:
     %"0" = alloca i64, align 8
-    %tmp_call1 = call i64 @print_int(i64 42)
-    store i64 %tmp_call1, ptr %"0", align 4
+    %peducoml_alloc_closure_n = call i64 @peducoml_alloc_closure(i64 ptrtoint (ptr @print_int to i64), i64 1)
+    %peducoml_apply_n = call i64 @peducoml_apply(i64 %peducoml_alloc_closure_n, i64 42)
+    store i64 %peducoml_apply_n, ptr %"0", align 4
     %AnfId0_n = load i64, ptr %"0", align 4
     ret i64 %AnfId0_n
   }

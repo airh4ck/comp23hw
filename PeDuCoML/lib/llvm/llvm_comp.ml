@@ -37,7 +37,7 @@ let rec codegen_immexpr env = function
      | _, GlobalScopeId id -> ok @@ lookup_function_exn id the_module
      | None, _ -> error @@ unbound id
      | Some llvalue, AnfId id ->
-       ok @@ build_load i64 llvalue ("AnfId" ^ string_of_int id ^ "_n") builder)
+       ok @@ build_load i64 llvalue (string_of_int id ^ "_n") builder)
   | ImmList imm_list ->
     let rec helper list_ptr_llv =
       let add = lookup_function_exn "peducoml_add_to_list" the_module in
@@ -110,7 +110,7 @@ let codegen_cexpr env = function
         builder
     in
     let result = build_zext result i64 "zext_n" builder in
-    ok result
+    ok @@ result
   | CApplication (func, arg) ->
     let* callee = codegen_immexpr env func in
     let* arg = codegen_immexpr env arg in
@@ -135,7 +135,7 @@ let codegen_cexpr env = function
 let rec codegen_aexpr env = function
   | ACExpr cexpr -> codegen_cexpr env cexpr
   | ALet (id, cexpr, aexpr) ->
-    let alloca = build_alloca i64 (string_of_unique_id id) builder in
+    let alloca = build_alloca i64 (string_of_unique_id id ^ "_n") builder in
     let* cexpr = codegen_cexpr env cexpr in
     build_store cexpr alloca builder |> ignore;
     let env = Base.Map.Poly.set env ~key:id ~data:alloca in
@@ -150,7 +150,7 @@ let codegen_global_scope_function env (func : global_scope_function) =
     (Base.Array.zip_exn (Base.List.to_array arg_list) (params func))
     ~f:(fun (name, value) ->
       match name with
-      | ImmId id -> set_value_name (string_of_unique_id id) value
+      | ImmId id -> set_value_name (string_of_unique_id id ^ "_n") value
       | _ -> failwith "Do arguments need to be immexprs?");
   let basic_block = append_block context "entry" func in
   position_at_end basic_block builder;
@@ -161,7 +161,7 @@ let codegen_global_scope_function env (func : global_scope_function) =
       ~f:(fun (name, value) acc ->
         match name with
         | ImmId id ->
-          let alloca = build_alloca i64 (string_of_unique_id id) builder in
+          let alloca = build_alloca i64 (string_of_unique_id id ^ "_n") builder in
           build_store value alloca builder |> ignore;
           Base.Map.Poly.set acc ~key:id ~data:alloca
         | _ -> failwith "Do they?")

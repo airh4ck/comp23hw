@@ -120,3 +120,31 @@
   > let main = print_int (partial_add 1 2)
   > EOF
   3
+  $ ./llvm_test.exe <<- EOF | lli -load ../../runtime/peducoml_runtime.so
+  > let rec factorial n = if n <= 1 then 1 else n * factorial (n - 1)
+  > let main = print_int (factorial 6)
+  > EOF
+  720
+  $ ./llvm_test.exe <<- EOF | lli -load ../../runtime/peducoml_runtime.so
+  > let is_greater_than_5 x = if x > 5 then true else false
+  > let main = print_bool (is_greater_than_5 6)
+  > EOF
+  true
+  $ ./llvm_test.exe <<- EOF | lli -load ../../runtime/peducoml_runtime.so
+  > let is_greater_than_5 x = if x > 5 then true else false
+  > let main = print_bool (is_greater_than_5 2)
+  > EOF
+  false
+  $ ./llvm_test.exe <<- EOF | lli -load ../../runtime/peducoml_runtime.so
+  > let rec filter predicate list =
+  >   match list with
+  >     | h :: t -> if predicate h then h :: filter predicate t else filter predicate t
+  >     | _ -> []
+  > 
+  > let main = print_list (filter (fun v -> v * v < 150) [12; 3; 54; 85; 36; 0; 91; 100; 1; 2; 13; 28; 63])
+  > EOF
+  [12; 3; 0; 1; 2]
+  $ ./llvm_test.exe <<- EOF | lli -load ../../runtime/peducoml_runtime.so
+  > let main = print_list ((5 + 4) :: 3 :: [1; 6; 0])
+  > EOF
+  [9; 3; 1; 6; 0]

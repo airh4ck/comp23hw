@@ -21,11 +21,11 @@ type cexpr =
   | CBinaryOperation of binary_operator * imm_expr * imm_expr
   | CUnaryOperation of unary_operator * imm_expr
   | CApplication of imm_expr * imm_expr
-  | CIf of imm_expr * imm_expr * imm_expr
+  | CIf of imm_expr * aexpr * aexpr
   | CConstructList of imm_expr * imm_expr
   | CImm of imm_expr
 
-type aexpr =
+and aexpr =
   | ALet of unique_id * cexpr * aexpr
   | ACExpr of cexpr
 
@@ -121,13 +121,16 @@ let rec anf (env : (string, unique_id, Base.String.comparator_witness) Base.Map.
     let* fresh_var = fresh in
     let* body = k @@ imm_id (anf_id fresh_var) in
     anf env condition (fun condition_imm ->
-      anf env true_branch (fun true_branch_imm ->
+      let* true_branch = anf env true_branch (fun x -> return @@ acimm x) in
+      let* false_branch = anf env false_branch (fun x -> return @@ acimm x) in
+      return @@ alet (anf_id fresh_var) (cif condition_imm true_branch false_branch) body)
+    (* anf env true_branch (fun true_branch_imm ->
         anf env false_branch (fun false_branch_imm ->
           return
           @@ alet
                (anf_id fresh_var)
                (cif condition_imm true_branch_imm false_branch_imm)
-               body)))
+               body))) *)
   | MFConstructList (operand, expr_list) ->
     let* fresh_var = fresh in
     let* body = k @@ imm_id (anf_id fresh_var) in

@@ -102,7 +102,7 @@ let build_unary_operation = function
   | Not -> build_not
 ;;
 
-let codegen_cexpr env = function
+let rec codegen_cexpr env = function
   | CImm imm_expr -> fst @@ codegen_immexpr env imm_expr
   | CBinaryOperation (bop, left, right) ->
     let* left = fst @@ codegen_immexpr env left in
@@ -154,12 +154,12 @@ let codegen_cexpr env = function
     let the_function = block_parent start_bb in
     let then_bb = append_block context "then_branch_n" the_function in
     position_at_end then_bb builder;
-    let then_branch, _ = codegen_immexpr env then_branch in
+    let then_branch = codegen_aexpr env then_branch in
     let* then_branch = then_branch in
     let new_then_bb = insertion_block builder in
     let else_bb = append_block context "else_branch_n" the_function in
     position_at_end else_bb builder;
-    let else_branch, _ = codegen_immexpr env else_branch in
+    let else_branch = codegen_aexpr env else_branch in
     let* else_branch = else_branch in
     let new_else_bb = insertion_block builder in
     let merge_bb = append_block context "if_context_n" the_function in
@@ -190,9 +190,8 @@ let codegen_cexpr env = function
         builder
     in
     ok result
-;;
 
-let rec codegen_aexpr env = function
+and codegen_aexpr env = function
   | ACExpr cexpr -> codegen_cexpr env cexpr
   | ALet (id, cexpr, aexpr) ->
     let alloca = build_alloca i64 (string_of_unique_id id) builder in

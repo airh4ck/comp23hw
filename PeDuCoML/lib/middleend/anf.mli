@@ -22,11 +22,11 @@ type cexpr =
   | CBinaryOperation of binary_operator * imm_expr * imm_expr
   | CUnaryOperation of unary_operator * imm_expr
   | CApplication of imm_expr * imm_expr
-  | CIf of imm_expr * imm_expr * imm_expr
+  | CIf of imm_expr * aexpr * aexpr
   | CConstructList of imm_expr * imm_expr
   | CImm of imm_expr
 
-type aexpr =
+and aexpr =
   | ALet of unique_id * cexpr * aexpr
   | ACExpr of cexpr
 

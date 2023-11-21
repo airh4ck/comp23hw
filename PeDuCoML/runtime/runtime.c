@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <malloc.h>
+#include <stdlib.h>
 
 // Application processing
 
@@ -12,20 +13,86 @@ typedef struct closure_struct
     int64_t *applied_args;
 } closure;
 
+static int64_t *closure_ptrs = NULL;
+static int64_t stored_ptrs_len = 0;
+
+static int64_t get_closure(int64_t ptr)
+{
+    for (int64_t i = 0; i < stored_ptrs_len; i++)
+    {
+        if (closure_ptrs[i] == ptr)
+        {
+            return ptr;
+        }
+    }
+
+    return 0;
+}
+
+static void realloc_ptrs_storage()
+{
+    int64_t *new_storage = (int64_t *)malloc((stored_ptrs_len + 64) * sizeof(int64_t));
+    int64_t new_storage_index = 0;
+    int64_t last_stored_ptrs_len = stored_ptrs_len;
+    for (int64_t i = 0; i < last_stored_ptrs_len; i++)
+    {
+        if (closure_ptrs[i] == 0)
+        {
+            stored_ptrs_len--;
+            continue;
+        }
+
+        new_storage[new_storage_index] = closure_ptrs[i];
+        new_storage_index++;
+    }
+
+    free(closure_ptrs);
+
+    closure_ptrs = new_storage;
+}
+
+static void add_to_closure_ptrs(int64_t ptr)
+{
+    if (stored_ptrs_len == 0)
+    {
+        closure_ptrs = (int64_t *)malloc(64 * sizeof(int64_t));
+    }
+
+    closure_ptrs[stored_ptrs_len] = ptr;
+    stored_ptrs_len++;
+    if (stored_ptrs_len % 64 == 0)
+    {
+        realloc_ptrs_storage();
+    }
+}
+
+static void remove_from_closure_ptrs(int64_t ptr)
+{
+    for (int64_t i = 0; i < stored_ptrs_len; i++)
+    {
+        if (closure_ptrs[i] == ptr)
+        {
+            closure_ptrs[i] = 0;
+        }
+    }
+}
+
 extern int64_t peducoml_alloc_closure(int64_t ptr, int64_t total_args)
 {
-    // Explanation: this function returns pointer + 1. Since the pointer is even, this value is odd.
-    // So, if (ptr % 2) == 1, the ptr points to an allocated closure. Otherwise, ptr points to some function.
-    if (ptr % 2 == 0)
+    int64_t closure_if_exists = get_closure(ptr);
+    if (closure_if_exists != 0)
     {
-        closure *closure_ptr = (closure *)malloc(sizeof(closure));
-        closure_ptr->func = (int64_t(*)())ptr;
-        closure_ptr->total_args = total_args;
-        closure_ptr->len_applied_args = 0;
-        closure_ptr->applied_args = (int64_t *)malloc(total_args * sizeof(int64_t));
-        return (int64_t)closure_ptr + (int64_t)1;
+        return closure_if_exists;
     }
-    return ptr;
+
+    closure *closure_ptr = (closure *)malloc(sizeof(closure));
+    closure_ptr->func = (int64_t(*)())ptr;
+    closure_ptr->total_args = total_args;
+    closure_ptr->len_applied_args = 0;
+    closure_ptr->applied_args = (int64_t *)malloc(total_args * sizeof(int64_t));
+    add_to_closure_ptrs((int64_t)closure_ptr);
+
+    return (int64_t)closure_ptr;
 }
 
 static int64_t peducoml_apply1(closure *closure_ptr)
@@ -168,7 +235,8 @@ static int64_t peducoml_apply12(closure *closure_ptr)
 
 extern int64_t peducoml_apply(int64_t ptr, int64_t arg)
 {
-    closure *closure_ptr = (closure *)(ptr - (int64_t)1);
+
+    closure *closure_ptr = (closure *)ptr;
     closure_ptr->applied_args[closure_ptr->len_applied_args] = arg;
     closure_ptr->len_applied_args++;
     if (closure_ptr->len_applied_args == closure_ptr->total_args)
@@ -237,6 +305,7 @@ extern int64_t peducoml_alloc_list()
 {
     node *address = (node *)malloc(sizeof(node));
     address->data = 0; // The first element of the list is its length. It is 0 when creating the list
+    address->next = NULL;
     return (int64_t)address;
 }
 
@@ -345,11 +414,11 @@ extern int64_t print_bool(int64_t b)
 {
     if (b > 0)
     {
-        puts("true");
+        printf("true");
     }
     else
     {
-        puts("false");
+        printf("false");
     }
     return 0;
 }

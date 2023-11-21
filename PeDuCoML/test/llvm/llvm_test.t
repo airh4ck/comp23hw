@@ -22,8 +22,8 @@
     %peducoml_alloc_closure_n = call i64 @peducoml_alloc_closure(i64 ptrtoint (ptr @print_int to i64), i64 1)
     %peducoml_apply_n = call i64 @peducoml_apply(i64 %peducoml_alloc_closure_n, i64 42)
     store i64 %peducoml_apply_n, ptr %"0", align 4
-    %AnfId0_n = load i64, ptr %"0", align 4
-    ret i64 %AnfId0_n
+    %"01" = load i64, ptr %"0", align 4
+    ret i64 %"01"
   }
   ---
   42

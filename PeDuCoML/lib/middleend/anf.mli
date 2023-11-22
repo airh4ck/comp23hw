@@ -30,6 +30,6 @@ and aexpr =
   | ALet of unique_id * cexpr * aexpr
   | ACExpr of cexpr
 
-type global_scope_function = string * imm_expr list * aexpr
+type global_scope_function = string * unique_id list * aexpr
 
 val run_anf_conversion : match_free_decl list -> global_scope_function list

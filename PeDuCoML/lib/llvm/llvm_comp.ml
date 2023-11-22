@@ -207,10 +207,7 @@ let codegen_global_scope_function env (func : global_scope_function) =
   let func = declare_function id fnty the_module in
   Base.Array.iter
     (Base.Array.zip_exn (Base.List.to_array arg_list) (params func))
-    ~f:(fun (name, value) ->
-      match name with
-      | ImmId id -> set_value_name (string_of_unique_id id) value
-      | _ -> failwith "Do arguments need to be immexprs?");
+    ~f:(fun (name, value) -> set_value_name (string_of_unique_id name) value);
   let basic_block = append_block context "entry" func in
   position_at_end basic_block builder;
   let env_with_args =
@@ -218,12 +215,9 @@ let codegen_global_scope_function env (func : global_scope_function) =
       (Base.Array.zip_exn (Base.List.to_array arg_list) (params func))
       ~init:env
       ~f:(fun (name, value) acc ->
-        match name with
-        | ImmId id ->
-          let alloca = build_alloca i64 (string_of_unique_id id) builder in
-          build_store value alloca builder |> ignore;
-          Base.Map.Poly.set acc ~key:id ~data:alloca
-        | _ -> failwith "Do they?")
+        let alloca = build_alloca i64 (string_of_unique_id name) builder in
+        build_store value alloca builder |> ignore;
+        Base.Map.Poly.set acc ~key:name ~data:alloca)
   in
   let* return_val = codegen_aexpr env_with_args body in
   let _ = build_ret return_val builder in

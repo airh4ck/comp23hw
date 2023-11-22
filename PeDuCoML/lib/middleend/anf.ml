@@ -29,7 +29,7 @@ and aexpr =
   | ALet of unique_id * cexpr * aexpr
   | ACExpr of cexpr
 
-type global_scope_function = string * imm_expr list * aexpr
+type global_scope_function = string * unique_id list * aexpr
 
 (* Smart constructors *)
 (* unique_id *)
@@ -160,15 +160,15 @@ let process_declaration env =
       let id = process_id id in
       return @@ Base.Map.set acc ~key:id ~data:(anf_id fresh_var))
   in
-  let gen_imm_id env name =
+  let gen_arg_id env name =
     let name = process_id name in
-    imm_id @@ Base.Map.find_exn env name
+    Base.Map.find_exn env name
   in
   let gen_global_scope_function env name args_list expr =
     let name = process_id name in
     let* env = update_map env args_list in
     let* anf_representation = anf env expr (fun imm -> return @@ acimm imm) in
-    return (name, List.map (gen_imm_id env) args_list, anf_representation)
+    return (name, List.map (gen_arg_id env) args_list, anf_representation)
   in
   function
   | MFDeclaration (name, args_list, expr) ->

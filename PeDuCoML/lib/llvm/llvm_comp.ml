@@ -125,22 +125,64 @@ let rec codegen_cexpr env = function
     let result = build_zext result i64 "zext_n" builder in
     ok result
   | CApplication (func, arg) ->
-    let callee, is_function = codegen_immexpr env func in
+    let callee, _ = codegen_immexpr env func in
     let* callee = callee in
     let* arg = fst @@ codegen_immexpr env arg in
+    (* type_of callee
+       |> string_of_lltype
+       |> Format.printf ";------------\n;%s\n;----------\n"; *)
     let func_ptr =
       let alloc_closure = lookup_function_exn "peducoml_alloc_closure" the_module in
       let fnty = function_type i64 [| i64; i64 |] in
-      build_call
-        fnty
-        alloc_closure
-        [| build_pointercast callee i64 "ptr_to_i64_n" builder
-         ; (if is_function
-            then params callee |> Base.Array.length |> const_int i64
-            else const_int i64 0)
-        |]
-        "peducoml_alloc_closure_n"
-        builder
+      if type_of callee = pointer_type context
+      then
+        build_call
+          fnty
+          alloc_closure
+          [| build_pointercast callee i64 "ptr_to_i64_n" builder
+           ; params callee |> Base.Array.length |> const_int i64
+          |]
+          "peducoml_alloc_closure_n"
+          builder
+      else (
+        let is_closure = const_and callee (const_int i64 1) in
+        let cond_val = build_icmp Icmp.Ne is_closure (const_int i64 0) "asfd" builder in
+        let start_bb = insertion_block builder in
+        let the_function = block_parent start_bb in
+        let then_bb = append_block context "then_branch_n" the_function in
+        position_at_end then_bb builder;
+        let then_branch =
+          build_call
+            fnty
+            alloc_closure
+            [| callee; const_int i64 0 |]
+            "peducoml_alloc_closure_n"
+            builder
+        in
+        let new_then_bb = insertion_block builder in
+        let else_bb = append_block context "else_branch_n" the_function in
+        position_at_end else_bb builder;
+        let else_branch =
+          build_call
+            fnty
+            alloc_closure
+            [| callee; params callee |> Base.Array.length |> const_int i64 |]
+            "peducoml_alloc_closure_n"
+            builder
+        in
+        let new_else_bb = insertion_block builder in
+        let merge_bb = append_block context "if_context_n" the_function in
+        position_at_end merge_bb builder;
+        let incoming = [ then_branch, new_then_bb; else_branch, new_else_bb ] in
+        let phi = build_phi incoming "if_phi_n" builder in
+        Llvm.position_at_end start_bb builder;
+        Llvm.build_cond_br cond_val then_bb else_bb builder |> ignore;
+        Llvm.position_at_end new_then_bb builder;
+        Llvm.build_br merge_bb builder |> ignore;
+        Llvm.position_at_end new_else_bb builder;
+        Llvm.build_br merge_bb builder |> ignore;
+        Llvm.position_at_end merge_bb builder;
+        phi)
     in
     let apply = lookup_function_exn "peducoml_apply" the_module in
     let fnty = function_type i64 [| i64; i64 |] in
@@ -205,6 +247,7 @@ let codegen_global_scope_function env (func : global_scope_function) =
   let id, arg_list, body = func in
   let fnty = function_type i64 (Array.make (Base.List.length arg_list) i64) in
   let func = declare_function id fnty the_module in
+  set_alignment 32 func;
   Base.Array.iter
     (Base.Array.zip_exn (Base.List.to_array arg_list) (params func))
     ~f:(fun (name, value) -> set_value_name (string_of_unique_id name) value);
@@ -252,6 +295,7 @@ let codegen program =
          the_module
     :: env
   in
+  Base.List.iter env ~f:(fun v -> set_alignment 32 v);
   let rec codegen acc env = function
     | [] -> ok @@ acc
     | head :: tail ->

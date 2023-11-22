@@ -5,7 +5,7 @@
 
 // Application processing
 
-typedef struct closure_struct
+__attribute__((optimize("align-functions=16"))) typedef struct closure_struct
 {
     int64_t (*func)();
     int64_t total_args;
@@ -77,12 +77,11 @@ static void remove_from_closure_ptrs(int64_t ptr)
     }
 }
 
-extern int64_t peducoml_alloc_closure(int64_t ptr, int64_t total_args)
+__attribute__((optimize("align-functions=16"))) extern int64_t peducoml_alloc_closure(int64_t ptr, int64_t total_args)
 {
-    int64_t closure_if_exists = get_closure(ptr);
-    if (closure_if_exists != 0)
+    if (ptr % 2 == 1)
     {
-        return closure_if_exists;
+        return ptr;
     }
 
     closure *closure_ptr = (closure *)malloc(sizeof(closure));
@@ -90,9 +89,8 @@ extern int64_t peducoml_alloc_closure(int64_t ptr, int64_t total_args)
     closure_ptr->total_args = total_args;
     closure_ptr->len_applied_args = 0;
     closure_ptr->applied_args = (int64_t *)malloc(total_args * sizeof(int64_t));
-    add_to_closure_ptrs((int64_t)closure_ptr);
 
-    return (int64_t)closure_ptr;
+    return (int64_t)closure_ptr + (int64_t)1;
 }
 
 static int64_t peducoml_apply1(closure *closure_ptr)
@@ -233,10 +231,10 @@ static int64_t peducoml_apply12(closure *closure_ptr)
         closure_ptr->applied_args[11]);
 }
 
-extern int64_t peducoml_apply(int64_t ptr, int64_t arg)
+__attribute__((optimize("align-functions=16"))) extern int64_t peducoml_apply(int64_t ptr, int64_t arg)
 {
 
-    closure *closure_ptr = (closure *)ptr;
+    closure *closure_ptr = (closure *)(ptr - (int64_t)1);
     closure_ptr->applied_args[closure_ptr->len_applied_args] = arg;
     closure_ptr->len_applied_args++;
     if (closure_ptr->len_applied_args == closure_ptr->total_args)
@@ -301,7 +299,7 @@ typedef struct node_struct
     struct node_struct *next;
 } node;
 
-extern int64_t peducoml_alloc_list()
+__attribute__((optimize("align-functions=16"))) extern int64_t peducoml_alloc_list()
 {
     node *address = (node *)malloc(sizeof(node));
     address->data = 0; // The first element of the list is its length. It is 0 when creating the list
@@ -309,7 +307,7 @@ extern int64_t peducoml_alloc_list()
     return (int64_t)address;
 }
 
-extern int64_t peducoml_add_to_list(int64_t list_ptr, int64_t data)
+__attribute__((optimize("align-functions=16"))) extern int64_t peducoml_add_to_list(int64_t list_ptr, int64_t data)
 {
     node *head = (node *)list_ptr;
     node *new_elem = (node *)malloc(sizeof(node));
@@ -320,7 +318,7 @@ extern int64_t peducoml_add_to_list(int64_t list_ptr, int64_t data)
     return list_ptr;
 }
 
-extern int64_t peducoml_field(int64_t list_ptr, int64_t index)
+__attribute__((optimize("align-functions=16"))) extern int64_t peducoml_field(int64_t list_ptr, int64_t index)
 {
     node *head = (node *)list_ptr;
     node *current = head->next;
@@ -331,7 +329,7 @@ extern int64_t peducoml_field(int64_t list_ptr, int64_t index)
     return current->data;
 }
 
-extern int64_t peducoml_tail(int64_t list_ptr)
+__attribute__((optimize("align-functions=16"))) extern int64_t peducoml_tail(int64_t list_ptr)
 {
     node *head = (node *)list_ptr;
     node *new_elem = (node *)malloc(sizeof(node));
@@ -340,13 +338,13 @@ extern int64_t peducoml_tail(int64_t list_ptr)
     return (int64_t)new_elem;
 }
 
-extern int64_t peducoml_length(int64_t list_ptr)
+__attribute__((optimize("align-functions=16"))) extern int64_t peducoml_length(int64_t list_ptr)
 {
     node *head = (node *)list_ptr;
     return head->data;
 }
 
-extern int64_t print_list(int64_t list_ptr)
+__attribute__((optimize("align-functions=16"))) extern int64_t print_list(int64_t list_ptr)
 {
     node *head = (node *)list_ptr;
     int64_t length = head->data;
@@ -368,14 +366,14 @@ extern int64_t print_list(int64_t list_ptr)
 
 // Tuple processing
 
-extern int64_t peducoml_alloc_tuple(int64_t cardinality)
+__attribute__((optimize("align-functions=16"))) extern int64_t peducoml_alloc_tuple(int64_t cardinality)
 {
     int64_t *tuple_ptr = (int64_t *)malloc((cardinality + 1) * sizeof(int64_t));
     tuple_ptr[0] = 0; // The first element of the tuple is the number of elements with which it was filled.
     return (int64_t)tuple_ptr;
 }
 
-extern int64_t peducoml_fill_tuple(int64_t ptr, int64_t elem)
+__attribute__((optimize("align-functions=16"))) extern int64_t peducoml_fill_tuple(int64_t ptr, int64_t elem)
 {
     int64_t *tuple_ptr = (int64_t *)ptr;
     tuple_ptr[0]++;
@@ -383,7 +381,7 @@ extern int64_t peducoml_fill_tuple(int64_t ptr, int64_t elem)
     return ptr;
 }
 
-extern int64_t print_tuple(int64_t ptr)
+__attribute__((optimize("align-functions=16"))) extern int64_t print_tuple(int64_t ptr)
 {
     int64_t *tuple_ptr = (int64_t *)ptr;
     int64_t length = tuple_ptr[0];
@@ -398,19 +396,19 @@ extern int64_t print_tuple(int64_t ptr)
 
 // Stdlib functions
 
-extern int64_t print_int(int64_t x)
+__attribute__((optimize("align-functions=16"))) extern int64_t print_int(int64_t x)
 {
     printf("%d", x);
     return 0;
 }
 
-extern int64_t print_char(int64_t c)
+__attribute__((optimize("align-functions=16"))) extern int64_t print_char(int64_t c)
 {
     putchar(c);
     return 0;
 }
 
-extern int64_t print_bool(int64_t b)
+__attribute__((optimize("align-functions=16"))) extern int64_t print_bool(int64_t b)
 {
     if (b > 0)
     {

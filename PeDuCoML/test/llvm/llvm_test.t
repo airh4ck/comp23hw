@@ -1,4 +1,4 @@
-  $ ./llvm_test.exe <<- EOF | tee llvm_test.ll ; echo "---" ; lli -load ../../runtime/peducoml_runtime.so llvm_test.ll
+  $ ./llvm_test.exe <<- EOF | tee llvm_test.ll ; echo "---" ; lli -load ../../runtime/peducoml_runtime.so -opaque-pointers llvm_test.ll
   > let main = print_int 42
   > EOF
   declare i64 @print_new_line(i64)
@@ -27,115 +27,115 @@
   }
   ---
   42
-  $ ./llvm_test.exe <<- EOF | lli -load ../../runtime/peducoml_runtime.so
+  $ ./llvm_test.exe <<- EOF | lli -load ../../runtime/peducoml_runtime.so -opaque-pointers
   > let main = print_char 'c'
   > EOF
   c
-  $ ./llvm_test.exe <<- EOF | lli -load ../../runtime/peducoml_runtime.so
+  $ ./llvm_test.exe <<- EOF | lli -load ../../runtime/peducoml_runtime.so -opaque-pointers
   > let main = print_int (((13 + 52 - 7) * 3 - 6) / 4)
   > EOF
   42
-  $ ./llvm_test.exe <<- EOF | lli -load ../../runtime/peducoml_runtime.so
+  $ ./llvm_test.exe <<- EOF | lli -load ../../runtime/peducoml_runtime.so -opaque-pointers
   > let main =
   >   let x = 1 in
   >   let y = 1 in
   >   print_bool (x = y)
   > EOF
   true
-  $ ./llvm_test.exe <<- EOF | lli -load ../../runtime/peducoml_runtime.so
+  $ ./llvm_test.exe <<- EOF | lli -load ../../runtime/peducoml_runtime.so -opaque-pointers
   > let main = print_list [1; 2; 3; 4; 5]
   > EOF
   [1; 2; 3; 4; 5]
-  $ ./llvm_test.exe <<- EOF | lli -load ../../runtime/peducoml_runtime.so
+  $ ./llvm_test.exe <<- EOF | lli -load ../../runtime/peducoml_runtime.so -opaque-pointers
   > let main = print_tuple (10, 5, false, true)
   > EOF
   (10, 5, 0, 1)
-  $ ./llvm_test.exe <<- EOF | lli -load ../../runtime/peducoml_runtime.so
+  $ ./llvm_test.exe <<- EOF | lli -load ../../runtime/peducoml_runtime.so -opaque-pointers
   > let main = 
   >   let x = 1 in
   >   let y = 1 in
   >   print_bool (x <> y)
   > EOF
   false
-  $ ./llvm_test.exe <<- EOF | lli -load ../../runtime/peducoml_runtime.so
+  $ ./llvm_test.exe <<- EOF | lli -load ../../runtime/peducoml_runtime.so -opaque-pointers
   > let main = 
   >   let x = 1 in
   >   let y = 42 in
   >   print_bool (x < y)
   > EOF
   true
-  $ ./llvm_test.exe <<- EOF | lli -load ../../runtime/peducoml_runtime.so
+  $ ./llvm_test.exe <<- EOF | lli -load ../../runtime/peducoml_runtime.so -opaque-pointers
   > let main = 
   >   let x = 42 in
   >   let y = 1 in
   >   print_bool (x <= y)
   > EOF
   false
-  $ ./llvm_test.exe <<- EOF | lli -load ../../runtime/peducoml_runtime.so
+  $ ./llvm_test.exe <<- EOF | lli -load ../../runtime/peducoml_runtime.so -opaque-pointers
   > let main = 
   >   let x = 1 in
   >   let y = 42 in
   >   print_bool (x > y)
   > EOF
   false
-  $ ./llvm_test.exe <<- EOF | lli -load ../../runtime/peducoml_runtime.so
+  $ ./llvm_test.exe <<- EOF | lli -load ../../runtime/peducoml_runtime.so -opaque-pointers
   > let main = 
   >   let x = 42 in
   >   let y = 42 in
   >   print_bool (x >= y)
   > EOF
   true
-  $ ./llvm_test.exe <<- EOF | lli -load ../../runtime/peducoml_runtime.so
+  $ ./llvm_test.exe <<- EOF | lli -load ../../runtime/peducoml_runtime.so -opaque-pointers
   > let main = 
   >   let x = true in
   >   let y = false in
   >   print_bool (x && y)
   > EOF
   false
-  $ ./llvm_test.exe <<- EOF | lli -load ../../runtime/peducoml_runtime.so
+  $ ./llvm_test.exe <<- EOF | lli -load ../../runtime/peducoml_runtime.so -opaque-pointers
   > let main = 
   >   let x = true in
   >   let y = false in
   >   print_bool (x || y)
   > EOF
   true
-  $ ./llvm_test.exe <<- EOF | lli -load ../../runtime/peducoml_runtime.so
+  $ ./llvm_test.exe <<- EOF | lli -load ../../runtime/peducoml_runtime.so -opaque-pointers
   > let id x = x
   > let main = print_int (id 42)
   > EOF
   42
-  $ ./llvm_test.exe <<- EOF | lli -load ../../runtime/peducoml_runtime.so
+  $ ./llvm_test.exe <<- EOF | lli -load ../../runtime/peducoml_runtime.so -opaque-pointers
   > let add x y = x + y
   > let main = print_int (add 12 32)
   > EOF
   44
-  $ ./llvm_test.exe <<- EOF | lli -load ../../runtime/peducoml_runtime.so
+  $ ./llvm_test.exe <<- EOF | lli -load ../../runtime/peducoml_runtime.so -opaque-pointers
   > let add_and_mul x y z = (x + y) * z
   > let main = print_int (add_and_mul 1 3 5)
   > EOF
   20
-  $ ./llvm_test.exe <<- EOF | lli -load ../../runtime/peducoml_runtime.so
+  $ ./llvm_test.exe <<- EOF | lli -load ../../runtime/peducoml_runtime.so -opaque-pointers
   > let add x y = x + y
   > let partial_add x = add x
   > let main = print_int (partial_add 1 2)
   > EOF
   3
-  $ ./llvm_test.exe <<- EOF | lli -load ../../runtime/peducoml_runtime.so
+  $ ./llvm_test.exe <<- EOF | lli -load ../../runtime/peducoml_runtime.so -opaque-pointers
   > let rec factorial n = if n <= 1 then 1 else n * factorial (n - 1)
   > let main = print_int (factorial 6)
   > EOF
   720
-  $ ./llvm_test.exe <<- EOF | lli -load ../../runtime/peducoml_runtime.so
+  $ ./llvm_test.exe <<- EOF | lli -load ../../runtime/peducoml_runtime.so -opaque-pointers
   > let is_greater_than_5 x = if x > 5 then true else false
   > let main = print_bool (is_greater_than_5 6)
   > EOF
   true
-  $ ./llvm_test.exe <<- EOF | lli -load ../../runtime/peducoml_runtime.so
+  $ ./llvm_test.exe <<- EOF | lli -load ../../runtime/peducoml_runtime.so -opaque-pointers
   > let is_greater_than_5 x = if x > 5 then true else false
   > let main = print_bool (is_greater_than_5 2)
   > EOF
   false
-  $ ./llvm_test.exe <<- EOF | lli -load ../../runtime/peducoml_runtime.so
+  $ ./llvm_test.exe <<-EOF | lli -load ../../runtime/peducoml_runtime.so -opaque-pointers
   > let rec filter predicate list =
   >   match list with
   >     | h :: t -> if predicate h then h :: filter predicate t else filter predicate t
@@ -144,11 +144,19 @@
   > let main = print_list (filter (fun v -> v * v < 150) [12; 3; 54; 85; 36; 0; 91; 100; 1; 2; 13; 28; 63])
   > EOF
   [12; 3; 0; 1; 2]
-  $ ./llvm_test.exe <<- EOF | lli -load ../../runtime/peducoml_runtime.so
+  $ ./llvm_test.exe <<- EOF | lli -load ../../runtime/peducoml_runtime.so -opaque-pointers
   > let main = print_list ((5 + 4) :: 3 :: [1; 6; 0])
   > EOF
   [9; 3; 1; 6; 0]
-  $ ./llvm_test.exe <<- EOF | lli -load ../../runtime/peducoml_runtime.so
+  $ ./llvm_test.exe <<- EOF | lli -load ../../runtime/peducoml_runtime.so -opaque-pointers
   > let main = print_list []
   > EOF
   []
+  $ ./llvm_test.exe <<- EOF | lli -load ../../runtime/peducoml_runtime.so -opaque-pointers
+  > let main = print_bool ('c' < 'd')
+  > EOF
+  []
+  $ ./llvm_test.exe <<- EOF | lli -load ../../runtime/peducoml_runtime.so -opaque-pointers
+  > let meta_id id x = id x
+  > let main = print_int (meta_id (fun x -> x) 42)
+  > EOF

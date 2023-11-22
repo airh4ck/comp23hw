@@ -148,3 +148,7 @@
   > let main = print_list ((5 + 4) :: 3 :: [1; 6; 0])
   > EOF
   [9; 3; 1; 6; 0]
+  $ ./llvm_test.exe <<- EOF | lli -load ../../runtime/peducoml_runtime.so
+  > let main = print_list []
+  > EOF
+  []

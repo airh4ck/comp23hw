@@ -50,7 +50,7 @@ let rec rewrite_match expr =
   let rt_length = mfapplication (mfidentifier "`peducoml_length") in
   let rt_field lst idx =
     mfapplication
-      (mfapplication (mfidentifier "`peducoml_field") lst)
+      (mfapplication (mfidentifier "`peducoml_list_field") lst)
       (mfliteral @@ lint idx)
   in
   let rt_head lst = rt_field lst 0 in

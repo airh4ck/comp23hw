@@ -65,7 +65,7 @@ open Match_elim
 (* Runtime fuctions (unavailable to users)
    | name             | args              |
    ----------------------------------------
-   | peducoml_field   | list/tuple index  |
+   | peducoml_list_field   | list/tuple index  |
    | peducoml_tail    | list/tuple        |
    | peducoml_length  | list/tuple        |
    ---------------------------------------*)
@@ -195,7 +195,10 @@ let anf_conversion program =
   in
   let env = Base.Map.empty (module Base.String) in
   let env =
-    Base.Map.set env ~key:"peducoml_field" ~data:(global_scope_id "peducoml_field")
+    Base.Map.set
+      env
+      ~key:"peducoml_list_field"
+      ~data:(global_scope_id "peducoml_list_field")
   in
   let env =
     Base.Map.set env ~key:"peducoml_tail" ~data:(global_scope_id "peducoml_tail")

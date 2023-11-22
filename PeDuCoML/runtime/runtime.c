@@ -320,7 +320,7 @@ extern int64_t peducoml_add_to_list(int64_t list_ptr, int64_t data)
     return list_ptr;
 }
 
-extern int64_t peducoml_field(int64_t list_ptr, int64_t index)
+extern int64_t peducoml_list_field(int64_t list_ptr, int64_t index)
 {
     node *head = (node *)list_ptr;
     node *current = head->next;
@@ -344,6 +344,80 @@ extern int64_t peducoml_length(int64_t list_ptr)
 {
     node *head = (node *)list_ptr;
     return head->data;
+}
+
+static int64_t peducoml_compare_lists(int64_t list1_ptr, int64_t list2_ptr)
+{
+    // -1 <=> list1 > list2
+    //  0 <=> list1 = list2
+    //  1 <=> list1 < list2
+    node *head1 = (node *)list1_ptr;
+    node *head2 = (node *)list2_ptr;
+    int64_t length1 = head1->data;
+    int64_t length2 = head2->data;
+    int64_t min_length = 0;
+    if (length1 <= length2)
+        min_length = length1;
+    else
+        min_length = length2;
+    node *current1 = head1->next;
+    node *current2 = head2->next;
+    for (int64_t i = 0; i < min_length; i++)
+    {
+        if (current1->data < current2->data)
+            return 1;
+        if (current1->data > current2->data)
+            return -1;
+        current1 = current1->next;
+        current2 = current2->next;
+    }
+
+    if (length1 < length2)
+        return 1;
+
+    return 0;
+}
+
+extern int64_t compare_lists_eq(int64_t list1_ptr, int64_t list2_ptr)
+{
+    if (peducoml_compare_lists(list1_ptr, list2_ptr) == 0)
+    {
+        return 1;
+    }
+    return 0;
+}
+
+extern int64_t compare_lists_neq(int64_t list1_ptr, int64_t list2_ptr)
+{
+    return 1 - compare_lists_eq(list1_ptr, list2_ptr);
+}
+
+extern int64_t compare_lists_gt(int64_t list1_ptr, int64_t list2_ptr)
+{
+    if (peducoml_compare_lists(list1_ptr, list2_ptr) == -1)
+    {
+        return 1;
+    }
+    return 0;
+}
+
+extern int64_t compare_lists_gte(int64_t list1_ptr, int64_t list2_ptr)
+{
+    if (peducoml_compare_lists(list1_ptr, list2_ptr) <= 0)
+    {
+        return 1;
+    }
+    return 0;
+}
+
+extern int64_t compare_lists_lt(int64_t list1_ptr, int64_t list2_ptr)
+{
+    return 1 - compare_lists_gte(list1_ptr, list2_ptr);
+}
+
+extern int64_t compare_lists_lte(int64_t list1_ptr, int64_t list2_ptr)
+{
+    return 1 - compare_lists_gt(list1_ptr, list2_ptr);
 }
 
 extern int64_t print_list(int64_t list_ptr)
@@ -370,8 +444,8 @@ extern int64_t print_list(int64_t list_ptr)
 
 extern int64_t peducoml_alloc_tuple(int64_t cardinality)
 {
-    int64_t *tuple_ptr = (int64_t *)malloc((cardinality + 1) * sizeof(int64_t));
-    tuple_ptr[0] = 0; // The first element of the tuple is the number of elements with which it was filled.
+    printf("card: %d\n", cardinality);
+    int64_t *tuple_ptr = (int64_t *)calloc((cardinality + 1), sizeof(int64_t));
     return (int64_t)tuple_ptr;
 }
 
@@ -381,6 +455,70 @@ extern int64_t peducoml_fill_tuple(int64_t ptr, int64_t elem)
     tuple_ptr[0]++;
     tuple_ptr[tuple_ptr[0]] = elem;
     return ptr;
+}
+
+static int64_t peducoml_compare_tuples(int64_t ptr1, int64_t ptr2)
+{
+    // -1 <=> tuple1 > tuple2
+    //  0 <=> tuple1 = tuple2
+    //  1 <=> tuple1 < tuple2
+    printf("%d %d\n", ptr1, ptr2);
+    int64_t *tuple1_ptr = (int64_t *)ptr1;
+    int64_t *tuple2_ptr = (int64_t *)ptr2;
+    int64_t length = tuple1_ptr[0];
+    for (int64_t i = 1; i <= length; i++)
+    {
+        printf("elems: %d %d\n", tuple1_ptr[i], tuple2_ptr[i]);
+        if (tuple1_ptr[i] < tuple2_ptr[i])
+            return 1;
+        if (tuple1_ptr[i] > tuple2_ptr[i])
+            return -1;
+    }
+
+    printf("%d %d\n", ptr1, ptr2);
+    return 0;
+}
+
+extern int64_t compare_tuples_eq(int64_t ptr1, int64_t ptr2)
+{
+    if (peducoml_compare_tuples(ptr1, ptr2) == 0)
+    {
+        return 1;
+    }
+    return 0;
+}
+
+extern int64_t compare_tuples_neq(int64_t ptr1, int64_t ptr2)
+{
+    return 1 - compare_tuples_eq(ptr1, ptr2);
+}
+
+extern int64_t compare_tuples_gt(int64_t ptr1, int64_t ptr2)
+{
+    if (peducoml_compare_tuples(ptr1, ptr2) == -1)
+    {
+        return 1;
+    }
+    return 0;
+}
+
+extern int64_t compare_tuples_gte(int64_t ptr1, int64_t ptr2)
+{
+    if (peducoml_compare_tuples(ptr1, ptr2) <= 0)
+    {
+        return 1;
+    }
+    return 0;
+}
+
+extern int64_t compare_tuples_lt(int64_t ptr1, int64_t ptr2)
+{
+    return 1 - compare_tuples_gte(ptr1, ptr2);
+}
+
+extern int64_t compare_tuples_lte(int64_t ptr1, int64_t ptr2)
+{
+    return 1 - compare_tuples_gt(ptr1, ptr2);
 }
 
 extern int64_t print_tuple(int64_t ptr)
@@ -396,7 +534,7 @@ extern int64_t print_tuple(int64_t ptr)
     return 0;
 }
 
-// Stdlib functions
+// Other Stdlib functions
 
 extern int64_t print_int(int64_t x)
 {

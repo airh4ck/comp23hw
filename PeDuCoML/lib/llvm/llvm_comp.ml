@@ -5,6 +5,7 @@
 open Anf
 open Ast
 open Llvm
+open Typing
 
 let context = global_context ()
 let builder = builder context
@@ -104,9 +105,9 @@ let build_unary_operation = function
 
 let rec codegen_cexpr env = function
   | CImm imm_expr -> fst @@ codegen_immexpr env imm_expr
-  | CBinaryOperation (bop, left, right) ->
-    let* left = fst @@ codegen_immexpr env left in
-    let* right = fst @@ codegen_immexpr env right in
+  | CBinaryOperation (bop, left_imm, right_imm) ->
+    let* left = fst @@ codegen_immexpr env left_imm in
+    let* right = fst @@ codegen_immexpr env right_imm in
     let result =
       build_binary_operation
         bop
@@ -227,9 +228,16 @@ let codegen_global_scope_function env (func : global_scope_function) =
 open Peducoml_stdlib
 
 let codegen program =
+  let rec count_args current = function
+    | TArr (_, out_ty) -> count_args (current + 1) out_ty
+    | _ -> current
+  in
   let env =
-    Base.List.map stdlib ~f:(fun (id, _) ->
-      declare_function id (function_type i64 [| i64 |]) the_module)
+    Base.List.map stdlib ~f:(fun (id, fun_type) ->
+      declare_function
+        id
+        (function_type i64 (Array.make (count_args 0 @@ snd fun_type) i64))
+        the_module)
   in
   let env =
     declare_function
@@ -242,7 +250,10 @@ let codegen program =
          "peducoml_add_to_list"
          (function_type i64 [| i64; i64 |])
          the_module
-    :: declare_function "peducoml_field" (function_type i64 [| i64; i64 |]) the_module
+    :: declare_function
+         "peducoml_list_field"
+         (function_type i64 [| i64; i64 |])
+         the_module
     :: declare_function "peducoml_tail" (function_type i64 [| i64 |]) the_module
     :: declare_function "peducoml_length" (function_type i64 [| i64 |]) the_module
     :: declare_function "peducoml_alloc_tuple" (function_type i64 [| i64 |]) the_module

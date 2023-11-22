@@ -79,7 +79,7 @@ let pp_global_scope_function fmt =
          fmt
          "let %s %a = %a"
          name
-         (fun fmt -> pp_args pp_immexpr fmt)
+         (fun fmt -> pp_args pp_id fmt)
          arg_list
          pp_aexpr
          body)

@@ -1,6 +1,18 @@
   $ ./llvm_test.exe <<- EOF | tee llvm_test.ll ; echo "---" ; lli -load ../../runtime/peducoml_runtime.so llvm_test.ll
   > let main = print_int 42
   > EOF
+  declare i64 @compare_tuples_lte(i64, i64)
+  declare i64 @compare_tuples_lt(i64, i64)
+  declare i64 @compare_tuples_gte(i64, i64)
+  declare i64 @compare_tuples_gt(i64, i64)
+  declare i64 @compare_tuples_neq(i64, i64)
+  declare i64 @compare_tuples_eq(i64, i64)
+  declare i64 @compare_lists_lte(i64, i64)
+  declare i64 @compare_lists_lt(i64, i64)
+  declare i64 @compare_lists_gte(i64, i64)
+  declare i64 @compare_lists_gt(i64, i64)
+  declare i64 @compare_lists_neq(i64, i64)
+  declare i64 @compare_lists_eq(i64, i64)
   declare i64 @print_new_line(i64)
   declare i64 @print_tuple(i64)
   declare i64 @print_list(i64)
@@ -11,7 +23,7 @@
   declare i64 @peducoml_alloc_tuple(i64)
   declare i64 @peducoml_length(i64)
   declare i64 @peducoml_tail(i64)
-  declare i64 @peducoml_field(i64, i64)
+  declare i64 @peducoml_list_field(i64, i64)
   declare i64 @peducoml_add_to_list(i64, i64)
   declare i64 @peducoml_alloc_list()
   declare i64 @peducoml_apply(i64, i64)
@@ -145,6 +157,15 @@
   > EOF
   [12; 3; 0; 1; 2]
   $ ./llvm_test.exe <<- EOF | lli -load ../../runtime/peducoml_runtime.so
+  > let rec add_1_to_list list = 
+  >   match list with
+  >     | head :: tail -> (head + 1) :: add_1_to_list tail
+  >     | _ -> []
+  > 
+  > let main = print_list (add_1_to_list [1; 2; 3; 4; 5])
+  > EOF
+  [2; 3; 4; 5; 6]
+  $ ./llvm_test.exe <<- EOF | lli -load ../../runtime/peducoml_runtime.so
   > let main = print_list ((5 + 4) :: 3 :: [1; 6; 0])
   > EOF
   [9; 3; 1; 6; 0]
@@ -152,3 +173,73 @@
   > let main = print_list []
   > EOF
   []
+  $ ./llvm_test.exe <<- EOF | lli -load ../../runtime/peducoml_runtime.so
+  > let main = print_bool (compare_lists_lt [1; 2; 3] [2])
+  > EOF
+  true
+  $ ./llvm_test.exe <<- EOF | lli -load ../../runtime/peducoml_runtime.so
+  > let main = print_bool (compare_lists_eq [1; 2; 3] [1; 2; 3])
+  > EOF
+  true
+  $ ./llvm_test.exe <<- EOF | lli -load ../../runtime/peducoml_runtime.so
+  > let main = print_bool (compare_lists_gt [1; 2] [1; 2; 3])
+  > EOF
+  false
+  $ ./llvm_test.exe <<- EOF | lli -load ../../runtime/peducoml_runtime.so
+  > let main = print_bool (compare_lists_lte [true; true] [true; true])
+  > EOF
+  true
+  $ ./llvm_test.exe <<- EOF | lli -load ../../runtime/peducoml_runtime.so
+  > let main = print_bool (compare_lists_gte ['a'; 'a'; 'b'] ['a'; 'a'; 'a'])
+  > EOF
+  true
+$ ./llvm_test.exe <<- EOF | lli -load ../../runtime/peducoml_runtime.so
+> let tuple1 = (1, 2, true, 'a')
+> let tuple2 = (1, 2, true, 'a')
+> let main = print_bool (compare_tuples_eq tuple1 tuple2)
+> EOF
+true
+$ ./llvm_test.exe <<- EOF | lli -load ../../runtime/peducoml_runtime.so
+> let tuple1 = (1, 2, true, 'a')
+> let tuple2 = (1, 2, true, 'a')
+> let main = print_bool (compare_tuples_lte tuple1 tuple2)
+> EOF
+true
+$ ./llvm_test.exe <<- EOF | lli -load ../../runtime/peducoml_runtime.so
+> let tuple1 = (1, 1, true, 'a')
+> let tuple2 = (1, 2, true, 'a')
+> let main = print_bool (compare_tuples_gt tuple1 tuple2)
+> EOF
+false
+$ ./llvm_test.exe <<- EOF | lli -load ../../runtime/peducoml_runtime.so
+> let tuple1 = ('a', 'b')
+> let tuple2 = ('b', 'b')
+> let main = print_bool (compare_tuples_gte tuple1 tuple2)
+> EOF
+false
+$ ./llvm_test.exe <<- EOF | lli -load ../../runtime/peducoml_runtime.so
+> let tuple1 = (1, 2, true, 'a')
+> let tuple2 = (1, 1, true, 'a')
+> let main = print_bool (compare_tuples_lt tuple1 tuple2)
+> EOF
+false
+$ ./llvm_test.exe <<- EOF | lli -load ../../runtime/peducoml_runtime.so
+> let main = print_tuple (10, 20, 888, 60)
+> EOF
+(10, 20, 888, 60)
+$ ./llvm_test.exe <<- EOF | lli -load ../../runtime/peducoml_runtime.so
+> let tuple_to_print = (10, 20, 888, 60)
+> let main = print_tuple (1, 2)
+> EOF
+(10, 20, 888, 60)
+$ ./llvm_test.exe <<- EOF | lli -load ../../runtime/peducoml_runtime.so
+> let list_to_print = [0; 10; 100]
+> let main = print_list list_to_print
+> EOF
+[0; 10; 100]
+$ ./llvm_test.exe <<- EOF | lli -load ../../runtime/peducoml_runtime.so
+> let number_to_print = 5
+> let main = print_int number_to_print
+> EOF
+5
+

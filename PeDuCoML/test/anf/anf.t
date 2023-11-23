@@ -156,9 +156,10 @@
     i3
   let ll_0 i5 i6 = let i8 =
     i5 ≤ 1 in
-    let i9 =
+    let i7 =
+    if i8 then let i9 =
     i6 1 in
-    let i14 =
+    i9 else let i14 =
     i5 - 1 in
     let i11 =
     ll_0 i14 in
@@ -168,8 +169,7 @@
     i13 i6 in
     let i10 =
     i11 i12 in
-    let i7 =
-    if i8 then i9 else i10 in
+    i10 in
     i7
   let ll_2 i15 = i15
   let fac i16 = let i18 =
@@ -273,14 +273,14 @@
   > EOF
   let factorial i0 = let i2 =
     i0 ≤ 1 in
-    let i5 =
+    let i1 =
+    if i2 then 1 else let i5 =
     i0 - 1 in
     let i4 =
     factorial i5 in
     let i3 =
     i0 * i4 in
-    let i1 =
-    if i2 then 1 else i3 in
+    i3 in
     i1
   let main = let i6 =
     factorial 6 in
@@ -301,7 +301,8 @@
     i14 = 0 in
     let i3 =
     if i13 then false else true in
-    let i12 =
+    let i2 =
+    if i3 then let i12 =
     peducoml_list_field i1 in
     let i5 =
     i12 0 in
@@ -319,8 +320,7 @@
     i11 i6 in
     let i8 =
     i9 :: i10 in
-    let i2 =
-    if i3 then i8 else [] in
+    i8 else [] in
     i2
   let tuple_map i15 i16 = let i24 =
     peducoml_list_field i16 in
@@ -473,7 +473,8 @@
   > EOF
   let ll_0 i0 i1 i2 = let i4 =
     i2 > 0 in
-    let i8 =
+    let i3 =
+    if i4 then let i8 =
     ll_0 i1 in
     let i9 =
     i0 + i1 in
@@ -483,8 +484,7 @@
     i2 - 1 in
     let i5 =
     i6 i7 in
-    let i3 =
-    if i4 then i5 else i1 in
+    i5 else i1 in
     i3
   let phi i10 = let i14 =
     ll_0 1 in
@@ -514,7 +514,8 @@
     i13 = 0 in
     let i3 =
     if i12 then false else true in
-    let i11 =
+    let i2 =
+    if i3 then let i11 =
     peducoml_list_field i0 in
     let i5 =
     i11 0 in
@@ -530,8 +531,7 @@
     i1 * i4 in
     let i8 =
     i9 i10 in
-    let i2 =
-    if i3 then i8 else i1 in
+    i8 else i1 in
     i2
   let product i14 = let i16 =
     ll_0 i14 in
@@ -557,7 +557,8 @@
     i13 = 0 in
     let i3 =
     if i12 then false else true in
-    let i11 =
+    let i2 =
+    if i3 then let i11 =
     peducoml_list_field i0 in
     let i5 =
     i11 0 in
@@ -573,8 +574,7 @@
     i1 + i4 in
     let i8 =
     i9 i10 in
-    let i2 =
-    if i3 then i8 else i1 in
+    i8 else i1 in
     i2
   let sum i14 = let i16 =
     ll_0 i14 in
@@ -600,7 +600,8 @@
     i10 = 0 in
     let i3 =
     if i9 then false else true in
-    let i5 =
+    let i2 =
+    if i3 then let i5 =
     peducoml_tail i0 in
     let i4 =
     i5 in
@@ -610,8 +611,7 @@
     i1 + 1 in
     let i6 =
     i7 i8 in
-    let i2 =
-    if i3 then i6 else i1 in
+    i6 else i1 in
     i2
   let length i11 = let i13 =
     ll_0 i11 in
@@ -635,7 +635,8 @@
     i17 = 0 in
     let i3 =
     if i16 then false else true in
-    let i15 =
+    let i2 =
+    if i3 then let i15 =
     peducoml_list_field i1 in
     let i5 =
     i15 0 in
@@ -647,20 +648,19 @@
     i7 in
     let i9 =
     i0 i4 in
-    let i14 =
-    filter i0 in
-    let i13 =
-    i14 i6 in
-    let i10 =
-    i4 :: i13 in
-    let i12 =
+    let i8 =
+    if i9 then let i12 =
     filter i0 in
     let i11 =
     i12 i6 in
-    let i8 =
-    if i9 then i10 else i11 in
-    let i2 =
-    if i3 then i8 else [] in
+    let i10 =
+    i4 :: i11 in
+    i10 else let i14 =
+    filter i0 in
+    let i13 =
+    i14 i6 in
+    i13 in
+    i8 else [] in
     i2
   let ll_0 i18 = let i19 =
     i18 > 10 in
@@ -695,12 +695,12 @@
     i6 in
     let i8 =
     i5 > 0 in
-    let i10 =
+    let i7 =
+    if i8 then 2 else let i10 =
     i5 = 0 in
     let i9 =
     if i10 then 1 else 0 in
-    let i7 =
-    if i8 then 2 else i9 in
+    i9 in
     i7
   let main = let i16 =
     count_solutions_of_sq_equation 2 in
@@ -740,7 +740,8 @@
     i19 = true in
     let i4 =
     i17 && i18 in
-    let i16 =
+    let i3 =
+    if i4 then true else let i16 =
     peducoml_list_field (i0, i1, i2) in
     let i15 =
     i16 0 in
@@ -764,8 +765,7 @@
     i7 && i8 in
     let i5 =
     if i6 then true else false in
-    let i3 =
-    if i4 then true else i5 in
+    i5 in
     i3
   let main = let i34 =
     10 * 5 in
@@ -851,7 +851,8 @@
     if i28 then false else true in
     let i3 =
     i26 && i27 in
-    let i25 =
+    let i2 =
+    if i3 then let i25 =
     peducoml_list_field (i0, i1) in
     let i24 =
     i25 1 in
@@ -895,8 +896,7 @@
     i15 i6 in
     let i12 =
     i13 :: i14 in
-    let i2 =
-    if i3 then i12 else [] in
+    i12 else [] in
     i2
   let matrix_sum i36 i37 = let i72 =
     peducoml_list_field (i36, i37) in
@@ -920,7 +920,8 @@
     if i65 then false else true in
     let i39 =
     i63 && i64 in
-    let i62 =
+    let i38 =
+    if i39 then let i62 =
     peducoml_list_field (i36, i37) in
     let i61 =
     i62 1 in
@@ -966,8 +967,7 @@
     i51 i42 in
     let i48 =
     i49 :: i50 in
-    let i38 =
-    if i39 then i48 else [] in
+    i48 else [] in
     i38
   let matrix1 = [[1; 5; 7]; [13; 32; 56]; [45; 2; 17]]
   let matrix2 = [[4; 29; 0]; [79; 12; 66]; [8; 88; 19]]
@@ -999,7 +999,8 @@
     i14 = 0 in
     let i3 =
     if i13 then false else true in
-    let i12 =
+    let i2 =
+    if i3 then let i12 =
     peducoml_list_field i1 in
     let i5 =
     i12 0 in
@@ -1017,8 +1018,7 @@
     i11 i6 in
     let i8 =
     i9 :: i10 in
-    let i2 =
-    if i3 then i8 else [] in
+    i8 else [] in
     i2
   let matrix_mult_number i15 i16 = let i30 =
     peducoml_length i15 in
@@ -1026,7 +1026,8 @@
     i30 = 0 in
     let i18 =
     if i29 then false else true in
-    let i28 =
+    let i17 =
+    if i18 then let i28 =
     peducoml_list_field i15 in
     let i20 =
     i28 0 in
@@ -1046,8 +1047,7 @@
     i26 i16 in
     let i23 =
     i24 :: i25 in
-    let i17 =
-    if i18 then i23 else [] in
+    i23 else [] in
     i17
   let matrix = [[1; 5; 7]; [13; 32; 56]; [45; 2; 17]]
   let main = let i32 =
@@ -1063,4 +1063,62 @@
   > 
   > let main = print_list (filter (fun v -> v * v < 150) [12; 3; 54; 85; 36; 0; 91; 100; 1; 2; 13; 28; 63])
   > EOF
-  ?
+  let filter i0 i1 = let i17 =
+    peducoml_length i1 in
+    let i16 =
+    i17 = 0 in
+    let i3 =
+    if i16 then false else true in
+    let i2 =
+    if i3 then let i15 =
+    peducoml_list_field i1 in
+    let i5 =
+    i15 0 in
+    let i4 =
+    i5 in
+    let i7 =
+    peducoml_tail i1 in
+    let i6 =
+    i7 in
+    let i9 =
+    i0 i4 in
+    let i8 =
+    if i9 then let i12 =
+    filter i0 in
+    let i11 =
+    i12 i6 in
+    let i10 =
+    i4 :: i11 in
+    i10 else let i14 =
+    filter i0 in
+    let i13 =
+    i14 i6 in
+    i13 in
+    i8 else [] in
+    i2
+  let ll_0 i18 = let i20 =
+    i18 * i18 in
+    let i19 =
+    i20 < 150 in
+    i19
+  let main = let i23 =
+    filter ll_0 in
+    let i22 =
+    i23 [12; 3; 54; 85; 36; 0; 91; 100; 1; 2; 13; 28; 63] in
+    let i21 =
+    print_list i22 in
+    i21
+  $ ./anf_test.exe <<- EOF
+  > let list1 = [1; 2; 3]
+  > let list2 = [2]
+  > let main = print_bool (compare_lists_lt list1 list2)
+  > EOF
+  let list1 = [1; 2; 3]
+  let list2 = [2]
+  let main = let i2 =
+    compare_lists_lt list1 in
+    let i1 =
+    i2 list2 in
+    let i0 =
+    print_bool i1 in
+    i0

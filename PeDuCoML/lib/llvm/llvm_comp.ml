@@ -28,7 +28,7 @@ let string_of_unique_id = function
 ;;
 
 let rec codegen_immexpr args_numbers env = function
-  (* Returns: (llvalue, (number of args of function-argument, wheter function is global scope one)) *)
+  (* Returns: (llvalue, (number of args of function-argument, whether function is global scope one)) *)
   | ImmInt num -> ok @@ const_int i64 num, (0, false)
   | ImmString str -> ok @@ const_string context str, (0, false)
   | ImmChar c -> ok @@ const_int i64 (Base.Char.to_int c), (0, false)
@@ -68,30 +68,33 @@ let rec codegen_immexpr args_numbers env = function
           tail
       | _ -> ok list_ptr_llv
     in
-    let alloc_list = lookup_function_exn "peducoml_alloc_list" the_module in
-    let fnty = function_type i64 [||] in
     let allocated_list =
-      build_call fnty alloc_list [||] "peducoml_alloc_list_n" builder
+      build_call
+        (function_type i64 [||])
+        (lookup_function_exn "peducoml_alloc_list" the_module)
+        [||]
+        "peducoml_alloc_list_n"
+        builder
     in
     helper allocated_list (Base.List.rev imm_list), (0, false)
   | ImmTuple imm_list ->
-    let rec helper tuple_ptr_llv =
-      let fill = lookup_function_exn "peducoml_fill_tuple" the_module in
-      let fnty = function_type i64 [| i64; i64 |] in
-      function
+    let rec helper tuple_ptr_llv = function
       | head :: tail ->
         let* elem = fst @@ codegen_immexpr args_numbers env head in
         helper
-          (build_call fnty fill [| tuple_ptr_llv; elem |] "peducoml_fill_tuple_n" builder)
+          (build_call
+             (function_type i64 [| i64; i64 |])
+             (lookup_function_exn "peducoml_fill_tuple" the_module)
+             [| tuple_ptr_llv; elem |]
+             "peducoml_fill_tuple_n"
+             builder)
           tail
       | _ -> ok tuple_ptr_llv
     in
-    let alloc_tuple = lookup_function_exn "peducoml_alloc_tuple" the_module in
-    let fnty = function_type i64 [| i64 |] in
     let allocated_tuple =
       build_call
-        fnty
-        alloc_tuple
+        (function_type i64 [| i64 |])
+        (lookup_function_exn "peducoml_alloc_tuple" the_module)
         [| Base.List.length imm_list |> const_int i64 |]
         "peducoml_alloc_tuple_n"
         builder

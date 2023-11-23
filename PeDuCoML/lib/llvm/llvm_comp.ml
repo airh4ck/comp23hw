@@ -5,7 +5,6 @@
 open Anf
 open Ast
 open Llvm
-open Typing
 
 let context = global_context ()
 let builder = builder context
@@ -225,7 +224,36 @@ let codegen_global_scope_function env (func : global_scope_function) =
   ok (func, env)
 ;;
 
+let gather_arg_numbers program =
+  let count_args env func =
+    let id, arg_list, body = func in
+    let zero_map =
+      Base.List.fold_right arg_list ~init:Base.Map.Poly.empty ~f:(fun arg acc ->
+        Base.Map.Poly.set acc ~key:arg ~data:0)
+    in
+    let env = Base.Map.Poly.set env ~key:id ~data:zero_map in
+    let rec process_cexpr env partials = function
+      | CApplication (func, arg)
+    and process_aexpr env partials = function
+      | ACExpr cexpr -> codegen_cexpr env cexpr
+      | ALet (id, cexpr, aexpr) ->
+        let alloca = build_alloca i64 (string_of_unique_id id) builder in
+        let* cexpr = codegen_cexpr env cexpr in
+        build_store cexpr alloca builder |> ignore;
+        let env = Base.Map.Poly.set env ~key:id ~data:alloca in
+        codegen_aexpr env aexpr
+    in
+    process_aexpr env Base.Map.Poly.empty body
+  in
+  let rec helper env = function
+    | head :: tail -> helper (count_args env head) tail
+    | [] -> env
+  in
+  helper Base.Map.Poly.empty program
+;;
+
 open Peducoml_stdlib
+open Typing
 
 let codegen program =
   let rec count_args current = function

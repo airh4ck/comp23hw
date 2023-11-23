@@ -1055,3 +1055,12 @@
     let i31 =
     i32 5 in
     i31
+  $ ./anf_test.exe <<- EOF
+  > let rec filter predicate list =
+  >   match list with
+  >     | h :: t -> if predicate h then h :: filter predicate t else filter predicate t
+  >     | _ -> []
+  > 
+  > let main = print_list (filter (fun v -> v * v < 150) [12; 3; 54; 85; 36; 0; 91; 100; 1; 2; 13; 28; 63])
+  > EOF
+  ?

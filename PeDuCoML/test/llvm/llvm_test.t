@@ -253,3 +253,7 @@
   > let main = print_bool bool_to_print
   > EOF
   true
+  $ ./llvm_test.exe <<- EOF | lli -load ../../runtime/peducoml_runtime.so
+  > let main = print_new_line
+  > EOF
+  

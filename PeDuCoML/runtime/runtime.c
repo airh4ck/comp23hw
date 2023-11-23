@@ -95,6 +95,11 @@ extern int64_t peducoml_alloc_closure(int64_t ptr, int64_t total_args)
     return (int64_t)closure_ptr;
 }
 
+extern int64_t peducoml_apply0(int64_t ptr)
+{
+    return ((int64_t(*)())ptr)();
+}
+
 static int64_t peducoml_apply1(closure *closure_ptr)
 {
     return closure_ptr->func(
@@ -444,7 +449,6 @@ extern int64_t print_list(int64_t list_ptr)
 
 extern int64_t peducoml_alloc_tuple(int64_t cardinality)
 {
-    printf("card: %d\n", cardinality);
     int64_t *tuple_ptr = (int64_t *)calloc((cardinality + 1), sizeof(int64_t));
     return (int64_t)tuple_ptr;
 }
@@ -462,20 +466,17 @@ static int64_t peducoml_compare_tuples(int64_t ptr1, int64_t ptr2)
     // -1 <=> tuple1 > tuple2
     //  0 <=> tuple1 = tuple2
     //  1 <=> tuple1 < tuple2
-    printf("%d %d\n", ptr1, ptr2);
     int64_t *tuple1_ptr = (int64_t *)ptr1;
     int64_t *tuple2_ptr = (int64_t *)ptr2;
     int64_t length = tuple1_ptr[0];
     for (int64_t i = 1; i <= length; i++)
     {
-        printf("elems: %d %d\n", tuple1_ptr[i], tuple2_ptr[i]);
         if (tuple1_ptr[i] < tuple2_ptr[i])
             return 1;
         if (tuple1_ptr[i] > tuple2_ptr[i])
             return -1;
     }
 
-    printf("%d %d\n", ptr1, ptr2);
     return 0;
 }
 

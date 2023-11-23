@@ -16,13 +16,13 @@ typedef struct closure_struct
 static int64_t *closure_ptrs = NULL;
 static int64_t stored_ptrs_len = 0;
 
-static int64_t get_closure(int64_t ptr)
+static int64_t is_closure(int64_t ptr)
 {
     for (int64_t i = 0; i < stored_ptrs_len; i++)
     {
         if (closure_ptrs[i] == ptr)
         {
-            return ptr;
+            return 1;
         }
     }
 
@@ -79,10 +79,9 @@ static void remove_from_closure_ptrs(int64_t ptr)
 
 extern int64_t peducoml_alloc_closure(int64_t ptr, int64_t total_args)
 {
-    int64_t closure_if_exists = get_closure(ptr);
-    if (closure_if_exists != 0)
+    if (is_closure(ptr) != 0)
     {
-        return closure_if_exists;
+        return ptr;
     }
 
     closure *closure_ptr = (closure *)malloc(sizeof(closure));

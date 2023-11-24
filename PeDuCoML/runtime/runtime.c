@@ -329,11 +329,12 @@ extern int64_t peducoml_add_to_list(int64_t list_ptr, int64_t data)
 {
     node *head = (node *)list_ptr;
     node *new_elem = (node *)malloc(sizeof(node));
+    node *new_head = (node *)malloc(sizeof(node));
     new_elem->data = data;
     new_elem->next = head->next;
-    head->data++; // Since we add the element, the list's length is increased by 1
-    head->next = new_elem;
-    return list_ptr;
+    new_head->data = head->data + 1; // Since we add the element, the list's length is increased by 1
+    new_head->next = new_elem;
+    return (int64_t)(new_head);
 }
 
 extern int64_t peducoml_list_field(int64_t list_ptr, int64_t index)

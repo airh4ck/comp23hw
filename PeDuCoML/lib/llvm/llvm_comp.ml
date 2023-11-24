@@ -161,9 +161,13 @@ let rec codegen_cexpr args_numbers env = function
         "peducoml_alloc_closure_n"
         builder
     in
-    let apply = lookup_function_exn "peducoml_apply" the_module in
-    let fnty = function_type i64 [| i64; i64 |] in
-    ok @@ build_call fnty apply [| func_ptr; arg |] "peducoml_apply_n" builder
+    ok
+    @@ build_call
+         (function_type i64 [| i64; i64 |])
+         (lookup_function_exn "peducoml_apply" the_module)
+         [| func_ptr; arg |]
+         "peducoml_apply_n"
+         builder
   | CIf (condition, then_branch, else_branch) ->
     let condition, _ = codegen_immexpr args_numbers env condition in
     let* condition = condition in
@@ -240,6 +244,19 @@ let codegen_global_scope_function args_numbers env (func : global_scope_function
   in
   let* return_val =
     codegen_aexpr (Base.Map.find_exn args_numbers function_name) env_with_args body
+  in
+  let return_val =
+    if type_of return_val = pointer_type context
+    then
+      build_call
+        (function_type i64 [| i64; i64 |])
+        (lookup_function_exn "peducoml_alloc_closure" the_module)
+        [| build_pointercast return_val i64 "ptr_to_i64_n" builder
+         ; params return_val |> Base.Array.length |> const_int i64
+        |]
+        "peducoml_alloc_closure_n"
+        builder
+    else return_val
   in
   let _ = build_ret return_val builder in
   ok (func, env)

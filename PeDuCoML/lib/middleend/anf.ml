@@ -68,7 +68,7 @@ open Match_elim
    | peducoml_list_field   | list index  |
    | peducoml_tuple_field  | tuple index |
    | peducoml_tail         | list        |
-   | peducoml_length       | list        |
+   | peducoml_list_length       | list        |
    -------------------------------------*)
 
 let process_id id =
@@ -211,7 +211,10 @@ let anf_conversion program =
     Base.Map.set env ~key:"peducoml_tail" ~data:(global_scope_id "peducoml_tail")
   in
   let env =
-    Base.Map.set env ~key:"peducoml_length" ~data:(global_scope_id "peducoml_length")
+    Base.Map.set
+      env
+      ~key:"peducoml_list_length"
+      ~data:(global_scope_id "peducoml_list_length")
   in
   let env =
     Base.List.fold stdlib ~init:env ~f:(fun acc (id, _) ->

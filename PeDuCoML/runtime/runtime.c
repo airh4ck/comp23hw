@@ -356,7 +356,7 @@ extern int64_t peducoml_tail(int64_t list_ptr)
     return (int64_t)new_elem;
 }
 
-extern int64_t peducoml_length(int64_t list_ptr)
+extern int64_t peducoml_list_length(int64_t list_ptr)
 {
     node *head = (node *)list_ptr;
     return head->data;
@@ -456,6 +456,38 @@ extern int64_t print_list(int64_t list_ptr)
     return 0;
 }
 
+extern int64_t concat_lists(int64_t list1_ptr, int64_t list2_ptr)
+{
+    node *head1 = (node *)list1_ptr;
+    node *head2 = (node *)list2_ptr;
+    int64_t length1 = head1->data;
+    int64_t length2 = head2->data;
+    node *result = (node *)malloc(sizeof(node));
+    result->data = 0;
+    node *current_result = result;
+    node *current = head1->next;
+    for (int64_t i = 0; i < length1; i++)
+    {
+        node *new_node = (node *)malloc(sizeof(node));
+        new_node->data = current->data;
+        current_result->next = new_node;
+        current_result = new_node;
+        current = current->next;
+        result->data++;
+    }
+    current = head2->next;
+    for (int64_t i = 0; i < length2; i++)
+    {
+        node *new_node = (node *)malloc(sizeof(node));
+        new_node->data = current->data;
+        current_result->next = new_node;
+        current_result = new_node;
+        current = current->next;
+        result->data++;
+    }
+    return (int64_t)result;
+}
+
 // Tuple processing
 
 extern int64_t peducoml_alloc_tuple(int64_t cardinality)
@@ -552,17 +584,67 @@ extern int64_t print_tuple(int64_t ptr)
     return 0;
 }
 
+// String processing
+
+extern int64_t print_char(int64_t c)
+{
+    putchar(c);
+    return 0;
+}
+
+extern int64_t print_string(int64_t string_ptr)
+{
+    node *string = (node *)string_ptr;
+    int64_t length = string->data;
+    node *current = string->next;
+    for (int64_t i = 0; i < length; i++)
+    {
+        print_char(current->data);
+        current = current->next;
+    }
+    return 0;
+}
+
+extern int64_t concat_strings(int64_t string1_ptr, int64_t string2_ptr)
+{
+    return concat_lists(string1_ptr, string2_ptr);
+}
+
+extern int64_t compare_strings_eq(int64_t string1_ptr, int64_t string2_ptr)
+{
+    return compare_lists_eq(string1_ptr, string2_ptr);
+}
+
+extern int64_t compare_strings_neq(int64_t string1_ptr, int64_t string2_ptr)
+{
+    return compare_lists_neq(string1_ptr, string2_ptr);
+}
+
+extern int64_t compare_strings_gt(int64_t string1_ptr, int64_t string2_ptr)
+{
+    return compare_lists_gt(string1_ptr, string2_ptr);
+}
+
+extern int64_t compare_strings_gte(int64_t string1_ptr, int64_t string2_ptr)
+{
+    return compare_lists_gte(string1_ptr, string2_ptr);
+}
+
+extern int64_t compare_strings_lt(int64_t string1_ptr, int64_t string2_ptr)
+{
+    return compare_lists_lt(string1_ptr, string2_ptr);
+}
+
+extern int64_t compare_strings_lte(int64_t string1_ptr, int64_t string2_ptr)
+{
+    return compare_lists_lte(string1_ptr, string2_ptr);
+}
+
 // Other Stdlib functions
 
 extern int64_t print_int(int64_t x)
 {
     printf("%d", x);
-    return 0;
-}
-
-extern int64_t print_char(int64_t c)
-{
-    putchar(c);
     return 0;
 }
 

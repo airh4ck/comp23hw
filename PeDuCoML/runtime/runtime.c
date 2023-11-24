@@ -81,7 +81,19 @@ extern int64_t peducoml_alloc_closure(int64_t ptr, int64_t total_args)
 {
     if (is_closure(ptr) != 0)
     {
-        return ptr;
+        closure *old_closure = (closure *)ptr;
+        closure *new_closure = (closure *)malloc(sizeof(closure));
+        new_closure->func = old_closure->func;
+        new_closure->total_args = old_closure->total_args;
+        new_closure->len_applied_args = old_closure->len_applied_args;
+        new_closure->applied_args = (int64_t *)malloc((old_closure->total_args) * sizeof(int64_t));
+        for (int64_t i = 0; i < old_closure->len_applied_args; i++)
+        {
+            new_closure->applied_args[i] = old_closure->applied_args[i];
+        }
+        add_to_closure_ptrs((int64_t)new_closure);
+
+        return (int64_t)new_closure;
     }
 
     closure *closure_ptr = (closure *)malloc(sizeof(closure));

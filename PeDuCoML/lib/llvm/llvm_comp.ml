@@ -27,10 +27,36 @@ let string_of_unique_id = function
   | GlobalScopeId id -> id
 ;;
 
-let rec codegen_immexpr args_numbers env = function
+let rec codegen_immexpr args_numbers env =
+  let list_helper imm_list =
+    let rec helper list_ptr_llv =
+      let add = lookup_function_exn "peducoml_add_to_list" the_module in
+      let fnty = function_type i64 [| i64; i64 |] in
+      function
+      | head :: tail ->
+        let* elem = fst @@ codegen_immexpr args_numbers env head in
+        helper
+          (build_call fnty add [| list_ptr_llv; elem |] "peducoml_add_to_list_n" builder)
+          tail
+      | _ -> ok list_ptr_llv
+    in
+    let allocated_list =
+      build_call
+        (function_type i64 [||])
+        (lookup_function_exn "peducoml_alloc_list" the_module)
+        [||]
+        "peducoml_alloc_list_n"
+        builder
+    in
+    helper allocated_list (Base.List.rev imm_list), (0, false)
+  in
+  function
   (* Returns: (llvalue, (number of args of function-argument, whether function is global scope one)) *)
   | ImmInt num -> ok @@ const_int i64 num, (0, false)
-  | ImmString str -> ok @@ const_string context str, (0, false)
+  | ImmString str ->
+    Base.List.init (Base.String.length str) ~f:(Base.String.get str)
+    |> Base.List.map ~f:(fun x -> ImmChar x)
+    |> list_helper
   | ImmChar c -> ok @@ const_int i64 (Base.Char.to_int c), (0, false)
   | ImmBool v -> ok @@ const_int i64 (Base.Bool.to_int v), (0, false)
   | ImmId unq_id ->
@@ -56,27 +82,7 @@ let rec codegen_immexpr args_numbers env = function
          | None -> 0
        in
        ok @@ build_load i64 llvalue (string_of_int id) builder, (number_of_args, false))
-  | ImmList imm_list ->
-    let rec helper list_ptr_llv =
-      let add = lookup_function_exn "peducoml_add_to_list" the_module in
-      let fnty = function_type i64 [| i64; i64 |] in
-      function
-      | head :: tail ->
-        let* elem = fst @@ codegen_immexpr args_numbers env head in
-        helper
-          (build_call fnty add [| list_ptr_llv; elem |] "peducoml_add_to_list_n" builder)
-          tail
-      | _ -> ok list_ptr_llv
-    in
-    let allocated_list =
-      build_call
-        (function_type i64 [||])
-        (lookup_function_exn "peducoml_alloc_list" the_module)
-        [||]
-        "peducoml_alloc_list_n"
-        builder
-    in
-    helper allocated_list (Base.List.rev imm_list), (0, false)
+  | ImmList imm_list -> list_helper imm_list
   | ImmTuple imm_list ->
     let rec helper tuple_ptr_llv = function
       | head :: tail ->
@@ -397,7 +403,7 @@ let codegen program =
          (function_type i64 [| i64; i64 |])
          the_module
     :: declare_function "peducoml_tail" (function_type i64 [| i64 |]) the_module
-    :: declare_function "peducoml_length" (function_type i64 [| i64 |]) the_module
+    :: declare_function "peducoml_list_length" (function_type i64 [| i64 |]) the_module
     :: declare_function "peducoml_alloc_tuple" (function_type i64 [| i64 |]) the_module
     :: declare_function
          "peducoml_fill_tuple"

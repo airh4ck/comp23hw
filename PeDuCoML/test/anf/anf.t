@@ -296,7 +296,7 @@
   > let main = map (tuple_map (fun x -> x * 2)) [(1, 2); (5, 6)]
   > EOF
   let map i0 i1 = let i14 =
-    peducoml_length i1 in
+    peducoml_list_length i1 in
     let i13 =
     i14 = 0 in
     let i3 =
@@ -509,7 +509,7 @@
   > let main = product [1; 2; 7; 12; 10; 3; 21]
   > EOF
   let ll_0 i0 i1 = let i13 =
-    peducoml_length i0 in
+    peducoml_list_length i0 in
     let i12 =
     i13 = 0 in
     let i3 =
@@ -552,7 +552,7 @@
   > let main = sum [1; 2; 7; 12; 10; 3; 21; 101; 78; 42; 38]
   > EOF
   let ll_0 i0 i1 = let i13 =
-    peducoml_length i0 in
+    peducoml_list_length i0 in
     let i12 =
     i13 = 0 in
     let i3 =
@@ -595,7 +595,7 @@
   > let main = length [1; 23; 12; 657; 123; 346; 6; 234 ; 99; 34; 78; 28; 123; 0]
   > EOF
   let ll_0 i0 i1 = let i10 =
-    peducoml_length i0 in
+    peducoml_list_length i0 in
     let i9 =
     i10 = 0 in
     let i3 =
@@ -630,7 +630,7 @@
   > let main = filter (fun v -> v > 10) [1;2;3]
   > EOF
   let filter i0 i1 = let i17 =
-    peducoml_length i1 in
+    peducoml_list_length i1 in
     let i16 =
     i17 = 0 in
     let i3 =
@@ -834,7 +834,7 @@
     let i34 =
     i35 0 in
     let i33 =
-    peducoml_length i34 in
+    peducoml_list_length i34 in
     let i32 =
     i33 = 0 in
     let i26 =
@@ -844,7 +844,7 @@
     let i30 =
     i31 1 in
     let i29 =
-    peducoml_length i30 in
+    peducoml_list_length i30 in
     let i28 =
     i29 = 0 in
     let i27 =
@@ -903,7 +903,7 @@
     let i71 =
     i72 0 in
     let i70 =
-    peducoml_length i71 in
+    peducoml_list_length i71 in
     let i69 =
     i70 = 0 in
     let i63 =
@@ -913,7 +913,7 @@
     let i67 =
     i68 1 in
     let i66 =
-    peducoml_length i67 in
+    peducoml_list_length i67 in
     let i65 =
     i66 = 0 in
     let i64 =
@@ -994,7 +994,7 @@
   > let main = matrix_mult_number matrix 5
   > EOF
   let ll_0 i0 i1 = let i14 =
-    peducoml_length i1 in
+    peducoml_list_length i1 in
     let i13 =
     i14 = 0 in
     let i3 =
@@ -1021,7 +1021,7 @@
     i8 else [] in
     i2
   let matrix_mult_number i15 i16 = let i30 =
-    peducoml_length i15 in
+    peducoml_list_length i15 in
     let i29 =
     i30 = 0 in
     let i18 =
@@ -1064,7 +1064,7 @@
   > let main = print_list (filter (fun v -> v * v < 150) [12; 3; 54; 85; 36; 0; 91; 100; 1; 2; 13; 28; 63])
   > EOF
   let filter i0 i1 = let i17 =
-    peducoml_length i1 in
+    peducoml_list_length i1 in
     let i16 =
     i17 = 0 in
     let i3 =
@@ -1132,7 +1132,7 @@
   > let main = print_list (map sq [1;2;3;4;5;6;7;8;9;10])
   > EOF
   let map i0 i1 = let i14 =
-    peducoml_length i1 in
+    peducoml_list_length i1 in
     let i13 =
     i14 = 0 in
     let i3 =

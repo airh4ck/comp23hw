@@ -201,6 +201,12 @@ let anf_conversion program =
       ~data:(global_scope_id "peducoml_list_field")
   in
   let env =
+    Base.Map.set
+      env
+      ~key:"peducoml_tuple_field"
+      ~data:(global_scope_id "peducoml_tuple_field")
+  in
+  let env =
     Base.Map.set env ~key:"peducoml_tail" ~data:(global_scope_id "peducoml_tail")
   in
   let env =

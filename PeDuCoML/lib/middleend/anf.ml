@@ -63,12 +63,13 @@ open State
 open Match_elim
 
 (* Runtime fuctions (unavailable to users)
-   | name             | args              |
-   ----------------------------------------
-   | peducoml_list_field   | list/tuple index  |
-   | peducoml_tail    | list/tuple        |
-   | peducoml_length  | list/tuple        |
-   ---------------------------------------*)
+   | name                  | args        |
+   ---------------------------------------
+   | peducoml_list_field   | list index  |
+   | peducoml_tuple_field  | tuple index |
+   | peducoml_tail         | list        |
+   | peducoml_length       | list        |
+   -------------------------------------*)
 
 let process_id id =
   if String.starts_with ~prefix:"peducoml_" id || String.starts_with ~prefix:"ll_" id

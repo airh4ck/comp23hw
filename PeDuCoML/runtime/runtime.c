@@ -472,6 +472,12 @@ extern int64_t peducoml_fill_tuple(int64_t ptr, int64_t elem)
     return ptr;
 }
 
+extern int64_t peducoml_tuple_field(int64_t ptr, int64_t index)
+{
+    int64_t *tuple_ptr = (int64_t *)ptr;
+    return tuple_ptr[index + 1];
+}
+
 static int64_t peducoml_compare_tuples(int64_t ptr1, int64_t ptr2)
 {
     // -1 <=> tuple1 > tuple2

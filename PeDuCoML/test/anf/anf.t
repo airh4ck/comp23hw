@@ -1122,3 +1122,85 @@
     let i0 =
     print_bool i1 in
     i0
+  $ ./anf_test.exe <<- EOF
+  > let rec map f list = match list with
+  >   | head :: tail -> f head :: map f tail
+  >   | _ -> []
+  > 
+  > let sq = fun x -> x * x
+  > 
+  > let main = print_list (map sq [1;2;3;4;5;6;7;8;9;10])
+  > EOF
+  let map i0 i1 = let i14 =
+    peducoml_length i1 in
+    let i13 =
+    i14 = 0 in
+    let i3 =
+    if i13 then false else true in
+    let i2 =
+    if i3 then let i12 =
+    peducoml_list_field i1 in
+    let i5 =
+    i12 0 in
+    let i4 =
+    i5 in
+    let i7 =
+    peducoml_tail i1 in
+    let i6 =
+    i7 in
+    let i9 =
+    i0 i4 in
+    let i11 =
+    map i0 in
+    let i10 =
+    i11 i6 in
+    let i8 =
+    i9 :: i10 in
+    i8 else [] in
+    i2
+  let ll_0 i15 = let i16 =
+    i15 * i15 in
+    i16
+  let sq = ll_0
+  let main = let i19 =
+    map sq in
+    let i18 =
+    i19 [1; 2; 3; 4; 5; 6; 7; 8; 9; 10] in
+    let i17 =
+    print_list i18 in
+    i17
+  $ ./anf_test.exe <<- EOF
+  > let pifagor_check = fun x y z -> x * x + y * y = z * z
+  > 
+  > let main = pifagor_check 3 4 5
+  > EOF
+  let ll_0 i0 i1 i2 = let i6 =
+    i0 * i0 in
+    let i7 =
+    i1 * i1 in
+    let i4 =
+    i6 + i7 in
+    let i5 =
+    i2 * i2 in
+    let i3 =
+    i4 = i5 in
+    i3
+  let pifagor_check = ll_0
+  let main = let i10 =
+    pifagor_check 3 in
+    let i9 =
+    i10 4 in
+    let i8 =
+    i9 5 in
+    i8
+  $ ./anf_test.exe <<- EOF
+  > let fst pair =
+  >   match pair with (x, _) -> x
+  > 
+  > let snd pair =
+  >   match pair with (_, y) -> y
+  > 
+  > let idx = 2
+  > 
+  > let main = print_int ((if idx = 1 then fst else snd) (13, 225))
+  > EOF

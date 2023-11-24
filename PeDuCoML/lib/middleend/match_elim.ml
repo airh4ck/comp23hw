@@ -47,7 +47,7 @@ open Lambda_lift
 
 let rec rewrite_match expr =
   let rt_tail = mfapplication (mfidentifier "`peducoml_tail") in
-  let rt_length = mfapplication (mfidentifier "`peducoml_length") in
+  let rt_length = mfapplication (mfidentifier "`peducoml_list_length") in
   let rt_list_field lst idx =
     mfapplication
       (mfapplication (mfidentifier "`peducoml_list_field") lst)

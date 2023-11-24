@@ -256,7 +256,7 @@
   $ ./llvm_test.exe <<- EOF | lli -load ../../runtime/peducoml_runtime.so
   > let main = print_new_line
   > EOF
-  
+
   $ ./llvm_test.exe <<- EOF | lli -load ../../runtime/peducoml_runtime.so
   > let rec filter predicate list =
   >   match list with
@@ -352,15 +352,15 @@
   > EOF
   0
   $ ./llvm_test.exe <<- EOF | lli -load ../../runtime/peducoml_runtime.so
-> let rec map f list = match list with
->   | head :: tail -> f head :: map f tail
->   | _ -> []
-> 
-> let sq = fun x -> x * x
-> 
-> let main = print_list (map sq [1;2;3;4;5;6;7;8;9;10])
-> EOF
-[1; 4; 9; 16; 25; 36; 49; 64; 81; 100]
+  > let rec map f list = match list with
+  >   | head :: tail -> f head :: map f tail
+  >   | _ -> []
+  > 
+  > let sq = fun x -> x * x
+  > 
+  > let main = print_list (map sq [1;2;3;4;5;6;7;8;9;10])
+  > EOF
+  [1; 4; 9; 16; 25; 36; 49; 64; 81; 100]
   $ ./llvm_test.exe <<- EOF | lli -load ../../runtime/peducoml_runtime.so
   > let f x y z =
   >   match x, y, z with
@@ -378,7 +378,7 @@
   $ ./llvm_test.exe <<- EOF | lli -load ../../runtime/peducoml_runtime.so
   > let pifagor_check = fun x y z -> x * x + y * y = z * z
   > 
-  > let main = pifagor_check 3 4 5
+  > let main = print_bool (pifagor_check 3 4 5)
   > EOF
   true
 $ ./llvm_test.exe <<- EOF | lli -load ../../runtime/peducoml_runtime.so

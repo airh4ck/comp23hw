@@ -449,10 +449,10 @@ extern int64_t print_list(int64_t list_ptr)
     node *current = head->next;
     for (int64_t i = 0; i < head->data - 1; i++)
     {
-        printf("%d; ", current->data);
+        printf("%ld; ", current->data);
         current = current->next;
     }
-    printf("%d]", current->data);
+    printf("%ld]", current->data);
     return 0;
 }
 
@@ -578,9 +578,9 @@ extern int64_t print_tuple(int64_t ptr)
     printf("(");
     for (int64_t i = 1; i < length; i++)
     {
-        printf("%d, ", tuple_ptr[i]);
+        printf("%ld, ", tuple_ptr[i]);
     }
-    printf("%d)", tuple_ptr[length]);
+    printf("%ld)", tuple_ptr[length]);
     return 0;
 }
 
@@ -644,7 +644,7 @@ extern int64_t compare_strings_lte(int64_t string1_ptr, int64_t string2_ptr)
 
 extern int64_t print_int(int64_t x)
 {
-    printf("%d", x);
+    printf("%ld", x);
     return 0;
 }
 

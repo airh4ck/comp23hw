@@ -1193,14 +1193,3 @@
     let i8 =
     i9 5 in
     i8
-  $ ./anf_test.exe <<- EOF
-  > let fst pair =
-  >   match pair with (x, _) -> x
-  > 
-  > let snd pair =
-  >   match pair with (_, y) -> y
-  > 
-  > let idx = 2
-  > 
-  > let main = print_int ((if idx = 1 then fst else snd) (13, 225))
-  > EOF

@@ -403,6 +403,10 @@ let codegen program =
          "peducoml_fill_tuple"
          (function_type i64 [| i64; i64 |])
          the_module
+    :: declare_function
+         "peducoml_tuple_field"
+         (function_type i64 [| i64; i64 |])
+         the_module
     :: env
   in
   let args_numbers = gather_args_numbers program in

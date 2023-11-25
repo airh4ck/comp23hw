@@ -29,17 +29,6 @@ let string_of_unique_id = function
 
 let rec codegen_immexpr args_numbers env =
   let list_helper imm_list =
-    let rec helper list_ptr_llv =
-      let add = lookup_function_exn "peducoml_add_to_list" the_module in
-      let fnty = function_type i64 [| i64; i64 |] in
-      function
-      | head :: tail ->
-        let* elem = fst @@ codegen_immexpr args_numbers env head in
-        helper
-          (build_call fnty add [| list_ptr_llv; elem |] "peducoml_add_to_list_n" builder)
-          tail
-      | _ -> ok list_ptr_llv
-    in
     let allocated_list =
       build_call
         (function_type i64 [||])
@@ -48,7 +37,13 @@ let rec codegen_immexpr args_numbers env =
         "peducoml_alloc_list_n"
         builder
     in
-    helper allocated_list (Base.List.rev imm_list), (0, false)
+    let add = lookup_function_exn "peducoml_add_to_list" the_module in
+    let fnty = function_type i64 [| i64; i64 |] in
+    ( Base.List.fold (Base.List.rev imm_list) ~init:(ok allocated_list) ~f:(fun acc elem ->
+        let* elem = codegen_immexpr args_numbers env elem |> fst in
+        let* acc = acc in
+        ok @@ build_call fnty add [| acc; elem |] "peducoml_add_to_list_n" builder)
+    , (0, false) )
   in
   function
   (* Returns: (llvalue, (number of args of function-argument, whether function is global scope one)) *)
@@ -84,19 +79,6 @@ let rec codegen_immexpr args_numbers env =
        ok @@ build_load i64 llvalue (string_of_int id) builder, (number_of_args, false))
   | ImmList imm_list -> list_helper imm_list
   | ImmTuple imm_list ->
-    let rec helper tuple_ptr_llv = function
-      | head :: tail ->
-        let* elem = fst @@ codegen_immexpr args_numbers env head in
-        helper
-          (build_call
-             (function_type i64 [| i64; i64 |])
-             (lookup_function_exn "peducoml_fill_tuple" the_module)
-             [| tuple_ptr_llv; elem |]
-             "peducoml_fill_tuple_n"
-             builder)
-          tail
-      | _ -> ok tuple_ptr_llv
-    in
     let allocated_tuple =
       build_call
         (function_type i64 [| i64 |])
@@ -105,7 +87,17 @@ let rec codegen_immexpr args_numbers env =
         "peducoml_alloc_tuple_n"
         builder
     in
-    helper allocated_tuple imm_list, (0, false)
+    ( Base.List.fold imm_list ~init:(ok allocated_tuple) ~f:(fun acc imm ->
+        let* elem = codegen_immexpr args_numbers env imm |> fst in
+        let* acc = acc in
+        ok
+        @@ build_call
+             (function_type i64 [| i64; i64 |])
+             (lookup_function_exn "peducoml_fill_tuple" the_module)
+             [| acc; elem |]
+             "peducoml_fill_tuple_n"
+             builder)
+    , (0, false) )
 ;;
 
 let build_binary_operation = function
@@ -272,15 +264,8 @@ let gather_args_numbers program =
   let count_args env func =
     let id, arg_list, body = func in
     let zero_map =
-      let rec helper cur_map cur_ind = function
-        | head :: tail ->
-          helper
-            (Base.Map.Poly.set cur_map ~key:cur_ind ~data:(head, 0))
-            (cur_ind + 1)
-            tail
-        | _ -> cur_map
-      in
-      helper Base.Map.Poly.empty 0 arg_list
+      Base.List.foldi arg_list ~init:Base.Map.Poly.empty ~f:(fun ind acc arg ->
+        Base.Map.Poly.set acc ~key:ind ~data:(arg, 0))
     in
     let env = Base.Map.Poly.set env ~key:id ~data:zero_map in
     let process_immexpr = function
@@ -352,11 +337,10 @@ let gather_args_numbers program =
     in
     process_aexpr env Base.Map.Poly.empty body
   in
-  let rec helper env = function
-    | head :: tail -> helper (fst @@ count_args env head) tail
-    | [] -> env
+  let intermediate_map =
+    Base.List.fold program ~init:Base.Map.Poly.empty ~f:(fun acc func ->
+      count_args acc func |> fst)
   in
-  let intermediate_map = helper Base.Map.Poly.empty program in
   let rec process_one_map curr_ind final_map current_map =
     if curr_ind >= 0
     then (

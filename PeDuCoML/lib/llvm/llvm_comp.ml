@@ -180,28 +180,28 @@ let rec codegen_cexpr args_numbers env = function
     let zero = const_int i64 0 in
     let condition_value = build_icmp Icmp.Ne condition zero "condition_value_n" builder in
     let start_bb = insertion_block builder in
-    let the_function = block_parent start_bb in
-    let then_bb = append_block context "then_branch_n" the_function in
+    let func = block_parent start_bb in
+    let then_bb = append_block context "then_branch_n" func in
     position_at_end then_bb builder;
     let then_branch = codegen_aexpr args_numbers env then_branch in
     let* then_branch = then_branch in
     let new_then_bb = insertion_block builder in
-    let else_bb = append_block context "else_branch_n" the_function in
+    let else_bb = append_block context "else_branch_n" func in
     position_at_end else_bb builder;
     let else_branch = codegen_aexpr args_numbers env else_branch in
     let* else_branch = else_branch in
     let new_else_bb = insertion_block builder in
-    let merge_bb = append_block context "if_context_n" the_function in
+    let merge_bb = append_block context "if_context_n" func in
     position_at_end merge_bb builder;
     let incoming = [ then_branch, new_then_bb; else_branch, new_else_bb ] in
     let phi = build_phi incoming "if_phi_n" builder in
-    Llvm.position_at_end start_bb builder;
-    Llvm.build_cond_br condition_value then_bb else_bb builder |> ignore;
-    Llvm.position_at_end new_then_bb builder;
-    Llvm.build_br merge_bb builder |> ignore;
-    Llvm.position_at_end new_else_bb builder;
-    Llvm.build_br merge_bb builder |> ignore;
-    Llvm.position_at_end merge_bb builder;
+    position_at_end start_bb builder;
+    build_cond_br condition_value then_bb else_bb builder |> ignore;
+    position_at_end new_then_bb builder;
+    build_br merge_bb builder |> ignore;
+    position_at_end new_else_bb builder;
+    build_br merge_bb builder |> ignore;
+    position_at_end merge_bb builder;
     ok phi
   | CConstructList (arg_value, arg_list) ->
     let arg_value, _ = codegen_immexpr args_numbers env arg_value in

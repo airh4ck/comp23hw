@@ -73,7 +73,7 @@ let rec codegen_immexpr args_numbers env =
                 "peducoml_apply0_n"
                 builder
          , (0, false) )
-       else ok @@ llv, (0, true)
+       else ok llv, (0, true)
      | None, _ -> error @@ unbound unq_id, (0, false)
      | Some llvalue, AnfId id ->
        let number_of_args =
@@ -196,11 +196,11 @@ let rec codegen_cexpr args_numbers env = function
     let incoming = [ then_branch, new_then_bb; else_branch, new_else_bb ] in
     let phi = build_phi incoming "if_phi_n" builder in
     position_at_end start_bb builder;
-    build_cond_br condition_value then_bb else_bb builder |> ignore;
+    let (_ : llvalue) = build_cond_br condition_value then_bb else_bb builder in
     position_at_end new_then_bb builder;
-    build_br merge_bb builder |> ignore;
+    let (_ : llvalue) = build_br merge_bb builder in
     position_at_end new_else_bb builder;
-    build_br merge_bb builder |> ignore;
+    let (_ : llvalue) = build_br merge_bb builder in
     position_at_end merge_bb builder;
     ok phi
   | CConstructList (arg_value, arg_list) ->
@@ -225,7 +225,7 @@ and codegen_aexpr args_numbers env = function
   | ALet (id, cexpr, aexpr) ->
     let alloca = build_alloca i64 (string_of_unique_id id) builder in
     let* cexpr = codegen_cexpr args_numbers env cexpr in
-    build_store cexpr alloca builder |> ignore;
+    let (_ : llvalue) = build_store cexpr alloca builder in
     let env = Base.Map.Poly.set env ~key:id ~data:alloca in
     codegen_aexpr args_numbers env aexpr
 ;;
@@ -245,7 +245,7 @@ let codegen_global_scope_function args_numbers env (func : global_scope_function
       ~init:env
       ~f:(fun (name, value) acc ->
         let alloca = build_alloca i64 (string_of_unique_id name) builder in
-        build_store value alloca builder |> ignore;
+        let (_ : llvalue) = build_store value alloca builder in
         Base.Map.Poly.set acc ~key:name ~data:alloca)
   in
   let* return_val =
@@ -417,7 +417,7 @@ let codegen program =
   in
   let args_numbers = gather_args_numbers program in
   let rec codegen acc env = function
-    | [] -> ok @@ acc
+    | [] -> ok acc
     | head :: tail ->
       let* head, env = codegen_global_scope_function args_numbers env head in
       codegen (head :: acc) env tail

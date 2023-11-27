@@ -206,6 +206,7 @@ let parse_tuple d =
   *> ((let parse_content =
          choice
            [ parens self
+           ; d.parse_let_in d
            ; d.parse_list_constructing d
            ; d.parse_binary_operation d
            ; d.parse_unary_operation d
@@ -214,7 +215,6 @@ let parse_tuple d =
            ; d.parse_fun d
            ; d.parse_conditional d
            ; d.parse_matching d
-           ; d.parse_let_in d
            ; parse_literal
            ; parse_identifier
            ]
@@ -236,7 +236,8 @@ let parse_list d =
   and separator = remove_spaces *> char ';' *> remove_spaces <|> remove_spaces
   and parse_content =
     choice
-      [ d.parse_tuple d
+      [ d.parse_let_in d
+      ; d.parse_tuple d
       ; d.parse_list_constructing d
       ; d.parse_binary_operation d
       ; d.parse_unary_operation d
@@ -245,7 +246,6 @@ let parse_list d =
       ; d.parse_fun d
       ; d.parse_conditional d
       ; d.parse_matching d
-      ; d.parse_let_in d
       ; parse_literal
       ; parse_identifier
       ]
@@ -261,7 +261,8 @@ let parse_fun d =
   *>
   let parse_content =
     choice
-      [ d.parse_tuple d
+      [ d.parse_let_in d
+      ; d.parse_tuple d
       ; d.parse_list_constructing d
       ; d.parse_binary_operation d
       ; d.parse_unary_operation d
@@ -270,7 +271,6 @@ let parse_fun d =
       ; self
       ; d.parse_conditional d
       ; d.parse_matching d
-      ; d.parse_let_in d
       ; parse_literal
       ; parse_identifier
       ]
@@ -288,7 +288,8 @@ let parse_fun d =
 let declaration_helper constructing_function d =
   let parse_content =
     choice
-      [ d.parse_tuple d
+      [ d.parse_let_in d
+      ; d.parse_tuple d
       ; d.parse_list_constructing d
       ; d.parse_binary_operation d
       ; d.parse_unary_operation d
@@ -297,7 +298,6 @@ let declaration_helper constructing_function d =
       ; d.parse_fun d
       ; d.parse_conditional d
       ; d.parse_matching d
-      ; d.parse_let_in d
       ; parse_literal
       ; parse_identifier
       ]
@@ -374,7 +374,8 @@ let parse_conditional d =
   *>
   let parse_content =
     choice
-      [ d.parse_tuple d
+      [ d.parse_let_in d
+      ; d.parse_tuple d
       ; d.parse_list_constructing d
       ; d.parse_binary_operation d
       ; d.parse_unary_operation d
@@ -383,7 +384,6 @@ let parse_conditional d =
       ; d.parse_fun d
       ; self
       ; d.parse_matching d
-      ; d.parse_let_in d
       ; parse_literal
       ; parse_identifier
       ]
@@ -404,7 +404,8 @@ let parse_matching d =
   *>
   let parse_content_right =
     choice
-      [ d.parse_tuple d
+      [ d.parse_let_in d
+      ; d.parse_tuple d
       ; d.parse_list_constructing d
       ; d.parse_binary_operation d
       ; d.parse_unary_operation d
@@ -413,7 +414,6 @@ let parse_matching d =
       ; d.parse_fun d
       ; d.parse_conditional d
       ; self
-      ; d.parse_let_in d
       ; parse_literal
       ; parse_identifier
       ]
@@ -474,13 +474,13 @@ let parse_binary_operation d =
   let parse_content =
     choice
       [ parens self
+      ; d.parse_let_in d
       ; d.parse_list_constructing d
       ; d.parse_unary_operation d
       ; d.parse_list d
       ; d.parse_application d
       ; d.parse_conditional d
       ; d.parse_matching d
-      ; d.parse_let_in d
       ; parse_literal
       ; parse_identifier
       ]
@@ -506,10 +506,10 @@ let parse_application d =
       <|>
       let function_parser =
         choice
-          [ parens @@ d.parse_fun d
+          [ parens @@ d.parse_let_in d
+          ; parens @@ d.parse_fun d
           ; parens @@ d.parse_conditional d
           ; parens @@ d.parse_matching d
-          ; parens @@ d.parse_let_in d
           ; parse_identifier
           ]
       and operand_parser =
@@ -520,10 +520,10 @@ let parse_application d =
           ; parens @@ d.parse_unary_operation d
           ; d.parse_list d
           ; parens self
+          ; parens @@ d.parse_let_in d
           ; parens @@ d.parse_fun d
           ; parens @@ d.parse_conditional d
           ; parens @@ d.parse_matching d
-          ; parens @@ d.parse_let_in d
           ; parse_literal
           ; parse_identifier
           ]
@@ -542,10 +542,10 @@ let parse_unary_operation d =
     let indent = many1 (satisfy space_predicate) in
     choice
       [ parens self <|> indent *> self
+      ; parens @@ d.parse_let_in d <|> indent *> d.parse_let_in d
       ; parens @@ d.parse_application d <|> indent *> d.parse_application d
       ; parens @@ d.parse_conditional d <|> indent *> d.parse_conditional d
       ; parens @@ d.parse_matching d <|> indent *> d.parse_matching d
-      ; parens @@ d.parse_let_in d <|> indent *> d.parse_let_in d
       ; parse_literal
       ; parse_identifier
       ; parens @@ d.parse_binary_operation d
@@ -554,10 +554,10 @@ let parse_unary_operation d =
     choice
       [ parens @@ d.parse_binary_operation d
       ; parens self
+      ; parens @@ d.parse_let_in d
       ; parens @@ d.parse_application d
       ; parens @@ d.parse_conditional d
       ; parens @@ d.parse_matching d
-      ; parens @@ d.parse_let_in d
       ; parse_literal
       ; parse_identifier
       ]
@@ -578,6 +578,7 @@ let parse_list_constructing d =
         choice
           [ parens @@ d.parse_tuple d
           ; parens self
+          ; d.parse_let_in d
           ; parens @@ d.parse_binary_operation d
           ; d.parse_unary_operation d
           ; d.parse_list d
@@ -585,7 +586,6 @@ let parse_list_constructing d =
           ; parens @@ d.parse_fun d
           ; parens @@ d.parse_conditional d
           ; parens @@ d.parse_matching d
-          ; d.parse_let_in d
           ; parse_literal
           ; parse_identifier
           ]

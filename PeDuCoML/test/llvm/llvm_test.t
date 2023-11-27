@@ -515,3 +515,20 @@
   > let main = apply_function (sum5 50 14 26) 95 110
   > EOF
   295
+  $ cat > tuples.ml <<- EOF
+  > let fst p = match p with (a,b) -> a
+  > let snd p = match p with (a,b) -> b
+  > let fac3 n =
+  >   let store = (3, (2, (1, 0))) in
+  >   let n3 = fst store in
+  >   let n2 = fst (snd store) in
+  >   let n1 = fst (snd (snd store)) in
+  >   n3 * n2 * n1
+  > let main =
+  >   let alive = (3, (2, (1, 0))) in
+  >   let tmp1 = fac3 0 in
+  >   let tmpl = print_int 42 in
+  >   0
+  > EOF
+  $ cat tuples.ml | ./llvm_test.exe | lli-16 -load ../../runtime/peducoml_runtime.so
+  42

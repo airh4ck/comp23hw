@@ -31,7 +31,7 @@ type dispatch =
 (* ------------------------------- *)
 
 (* Helpers *)
-let space_predicate x = x == ' ' || x == '\n' || x == '\t' || x == '\r'
+let space_predicate x = x = ' ' || x = '\n' || x = '\t' || x = '\r'
 let remove_spaces = take_while space_predicate
 let parens parser = remove_spaces *> char '(' *> parser <* remove_spaces <* char ')'
 

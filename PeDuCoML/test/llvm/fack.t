@@ -6,4 +6,4 @@
   $ ocaml input.ml
   720
   $ cat input.ml | ./llvm_test.exe | lli-16 -load ../../runtime/peducoml_runtime.so
-  
+  720

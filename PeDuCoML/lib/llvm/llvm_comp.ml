@@ -148,7 +148,23 @@ let rec codegen_cexpr args_numbers env = function
     let number_of_args =
       if is_global then params callee |> Base.Array.length else number_of_args
     in
-    let* arg = fst @@ codegen_immexpr args_numbers env arg in
+    let arg, (arg_nargs, arg_is_global) = codegen_immexpr args_numbers env arg in
+    let* arg = arg in
+    let arg =
+      if type_of arg = pointer_type context
+      then
+        build_call
+          (function_type i64 [| i64; i64 |])
+          (lookup_function_exn "peducoml_alloc_closure" the_module)
+          [| build_pointercast arg i64 "ptr_to_i64_n" builder
+           ; const_int
+               i64
+               (if arg_is_global then params arg |> Base.Array.length else arg_nargs)
+          |]
+          "peducoml_alloc_closure_n"
+          builder
+      else arg
+    in
     let func_ptr =
       build_call
         (function_type i64 [| i64; i64 |])

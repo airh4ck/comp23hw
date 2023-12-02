@@ -300,20 +300,23 @@ let gather_args_numbers program =
                  | Some (GlobalScopeId func_arg_name), GlobalScopeId func_name ->
                    (match Base.Map.Poly.find env func_name with
                     | Some arg_numbers_map ->
-                      let arg_id, _ =
-                        Base.Map.Poly.find_exn arg_numbers_map current_arg_number
-                      in
-                      let args_number =
-                        Base.Map.Poly.length (Base.Map.Poly.find_exn env func_arg_name)
-                      in
-                      Base.Map.Poly.set
-                        env
-                        ~key:func_name
-                        ~data:
-                          (Base.Map.Poly.set
-                             arg_numbers_map
-                             ~key:current_arg_number
-                             ~data:(arg_id, args_number))
+                      if Base.Map.Poly.length arg_numbers_map > current_arg_number
+                      then (
+                        let arg_id, _ =
+                          Base.Map.Poly.find_exn arg_numbers_map current_arg_number
+                        in
+                        let args_number =
+                          Base.Map.Poly.length (Base.Map.Poly.find_exn env func_arg_name)
+                        in
+                        Base.Map.Poly.set
+                          env
+                          ~key:func_name
+                          ~data:
+                            (Base.Map.Poly.set
+                               arg_numbers_map
+                               ~key:current_arg_number
+                               ~data:(arg_id, args_number)))
+                      else env
                     | None -> env)
                  | _ -> env)
               , Base.Map.Poly.set

@@ -1193,3 +1193,15 @@
     let i8 =
     i9 5 in
     i8
+  $ ./anf_test.exe <<- EOF
+  > let main = (fun x -> x) (fun x -> x) print_int 42
+  > EOF
+  let ll_0 i0 = i0
+  let ll_1 i1 = i1
+  let main = let i4 =
+    ll_0 ll_1 in
+    let i3 =
+    i4 print_int in
+    let i2 =
+    i3 42 in
+    i2

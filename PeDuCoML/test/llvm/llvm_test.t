@@ -30,6 +30,7 @@
   declare i64 @print_int(i64)
   declare i64 @peducoml_tuple_field(i64, i64)
   declare i64 @peducoml_fill_tuple(i64, i64)
+  declare i64 @peducoml_divide(i64, i64)
   declare i64 @peducoml_alloc_tuple(i64)
   declare i64 @peducoml_list_length(i64)
   declare i64 @peducoml_tail(i64)
@@ -515,7 +516,7 @@
   > let main = apply_function (sum5 50 14 26) 95 110
   > EOF
   295
-  $ cat > tuples.ml <<- EOF
+  $ ./llvm_test.exe <<- EOF | lli -load ../../runtime/peducoml_runtime.so
   > let fst p = match p with (a,b) -> a
   > let snd p = match p with (a,b) -> b
   > let fac3 n =
@@ -530,67 +531,24 @@
   >   let tmpl = print_int 42 in
   >   0
   > EOF
-  $ cat tuples.ml | ./llvm_test.exe | lli -load ../../runtime/peducoml_runtime.so
   42
-  $ cat > tuples.ml <<- EOF
+  $ ./llvm_test.exe <<- EOF | lli -load ../../runtime/peducoml_runtime.so
   > let rec fack n k = if n<=1 then k 1 else fack (n-1) (fun m -> k(m*n))
   > let fac n = fack n (fun id -> id)
   > let main = print_int (fac 6)
   > EOF
-  $ cat tuples.ml | ./llvm_test.exe | lli -load ../../runtime/peducoml_runtime.so
   720
-  $ cat > tuples.ml <<- EOF
+  $ ./llvm_test.exe <<- EOF | lli -load ../../runtime/peducoml_runtime.so
   > let main = (fun x -> x) (fun x -> x) print_int 42
   > EOF
-  $ cat tuples.ml | ./llvm_test.exe | lli -load ../../runtime/peducoml_runtime.so
   42
-  $ cat > input.ml <<- EOF
-  > let main truee = truee  
+  $ ./llvm_test.exe <<- EOF | lli -load ../../runtime/peducoml_runtime.so
+  > let func truee = truee
+  > let main = print_string (func "Now truee is correct id")  
   > EOF
-  $ ocaml input.ml
-  $ cat input.ml | ./llvm_test.exe
-  declare i64 @concat_strings(i64, i64)
-  declare i64 @compare_strings_lte(i64, i64)
-  declare i64 @compare_strings_lt(i64, i64)
-  declare i64 @compare_strings_gte(i64, i64)
-  declare i64 @compare_strings_gt(i64, i64)
-  declare i64 @compare_strings_neq(i64, i64)
-  declare i64 @compare_strings_eq(i64, i64)
-  declare i64 @compare_tuples_lte(i64, i64)
-  declare i64 @compare_tuples_lt(i64, i64)
-  declare i64 @compare_tuples_gte(i64, i64)
-  declare i64 @compare_tuples_gt(i64, i64)
-  declare i64 @compare_tuples_neq(i64, i64)
-  declare i64 @compare_tuples_eq(i64, i64)
-  declare i64 @concat_lists(i64, i64)
-  declare i64 @compare_lists_lte(i64, i64)
-  declare i64 @compare_lists_lt(i64, i64)
-  declare i64 @compare_lists_gte(i64, i64)
-  declare i64 @compare_lists_gt(i64, i64)
-  declare i64 @compare_lists_neq(i64, i64)
-  declare i64 @compare_lists_eq(i64, i64)
-  declare i64 @print_new_line()
-  declare i64 @print_string(i64)
-  declare i64 @print_tuple(i64)
-  declare i64 @print_list(i64)
-  declare i64 @print_bool(i64)
-  declare i64 @print_char(i64)
-  declare i64 @print_int(i64)
-  declare i64 @peducoml_tuple_field(i64, i64)
-  declare i64 @peducoml_fill_tuple(i64, i64)
-  declare i64 @peducoml_alloc_tuple(i64)
-  declare i64 @peducoml_list_length(i64)
-  declare i64 @peducoml_tail(i64)
-  declare i64 @peducoml_list_field(i64, i64)
-  declare i64 @peducoml_add_to_list(i64, i64)
-  declare i64 @peducoml_alloc_list()
-  declare i64 @peducoml_apply0(i64)
-  declare i64 @peducoml_apply(i64, i64)
-  declare i64 @peducoml_alloc_closure(i64, i64)
-  define i64 @main(i64 %"0") {
-  entry:
-    %"01" = alloca i64, align 8
-    store i64 %"0", ptr %"01", align 4
-    %"02" = load i64, ptr %"01", align 4
-    ret i64 %"02"
-  }
+  Now truee is correct id
+  $ ./llvm_test.exe <<- EOF | lli -load ../../runtime/peducoml_runtime.so
+  > let main = print_int (1/0)
+  > EOF
+  Exception: devision by zero. Exited with 1
+  [1]

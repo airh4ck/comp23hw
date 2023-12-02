@@ -309,6 +309,17 @@ extern int64_t peducoml_apply(int64_t ptr, int64_t arg)
     return ptr;
 }
 
+extern int64_t peducoml_divide(int64_t dividend, int64_t divider)
+{
+    if (divider == 0)
+    {
+        printf("Exception: devision by zero. Exited with 1\n");
+        exit(1);
+    }
+
+    return dividend / divider;
+}
+
 // List processing
 
 typedef struct node_struct

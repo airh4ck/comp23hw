@@ -125,16 +125,26 @@ let rec codegen_cexpr args_numbers env = function
   | CBinaryOperation (bop, left_imm, right_imm) ->
     let* left = fst @@ codegen_immexpr args_numbers env left_imm in
     let* right = fst @@ codegen_immexpr args_numbers env right_imm in
-    let result =
-      build_binary_operation
-        bop
-        left
-        right
-        (show_binary_operator bop ^ "result_n")
-        builder
-    in
-    let result = build_zext result i64 "zext_n" builder in
-    ok result
+    (match bop with
+     | Div ->
+       ok
+       @@ build_call
+            (function_type i64 [| i64; i64 |])
+            (lookup_function_exn "peducoml_divide" the_module)
+            [| left; right |]
+            "peducoml_divide_n"
+            builder
+     | _ ->
+       let result =
+         build_binary_operation
+           bop
+           left
+           right
+           (show_binary_operator bop ^ "result_n")
+           builder
+       in
+       let result = build_zext result i64 "zext_n" builder in
+       ok result)
   | CUnaryOperation (uop, arg) ->
     let* arg = fst @@ codegen_immexpr args_numbers env arg in
     let result =
@@ -408,6 +418,7 @@ let codegen program =
     :: declare_function "peducoml_tail" (function_type i64 [| i64 |]) the_module
     :: declare_function "peducoml_list_length" (function_type i64 [| i64 |]) the_module
     :: declare_function "peducoml_alloc_tuple" (function_type i64 [| i64 |]) the_module
+    :: declare_function "peducoml_divide" (function_type i64 [| i64; i64 |]) the_module
     :: declare_function
          "peducoml_fill_tuple"
          (function_type i64 [| i64; i64 |])

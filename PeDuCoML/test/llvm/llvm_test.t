@@ -552,3 +552,15 @@
   > EOF
   Exception: devision by zero. Exited with 1
   [1]
+  $ ./llvm_test.exe <<- EOF | lli -load ../../runtime/peducoml_runtime.so -opaque-pointers
+  > let rec fib n =
+  >   if n=0 then 0 else if n=1 then 1 else fib (n-2) + fib (n-1)
+  > let main = let u = print_int (fib 8) in 0
+  > EOF
+  21
+  $ ./llvm_test.exe <<- EOF | lli -load ../../runtime/peducoml_runtime.so -opaque-pointers
+  > let rec fib n k =
+  >   if n=0 then k 0 else if n=1 then k 1 else fib (n-2) (fun a -> fib (n-1) (fun b -> k(a+b)))
+  > let main = let u = print_int (fib 8 (fun w -> w)) in 0
+  > EOF
+  21

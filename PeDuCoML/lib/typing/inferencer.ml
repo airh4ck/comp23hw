@@ -416,7 +416,7 @@ let infer =
       let* subst_true_branch, typ_true_branch = helper env true_branch in
       let* subst_false_branch, typ_false_branch = helper env false_branch in
       let* subst' = unify typ_condition bool_typ in
-      let* subst'' = unify typ_true_branch typ_false_branch in
+      let* subst'' = unify typ_false_branch typ_true_branch in
       let* final_subst =
         Subst.compose_all
           [ subst_condition; subst_true_branch; subst_false_branch; subst'; subst'' ]

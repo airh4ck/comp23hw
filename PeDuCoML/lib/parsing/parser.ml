@@ -88,7 +88,11 @@ let parse_literal constructor =
       in
       let parse_char_literal = char '\'' *> any_char <* char '\'' >>| lchar in
       let parse_bool_literal =
-        string "true" <|> string "false" >>| bool_of_string >>| lbool
+        parse_entity
+        >>= (function
+               | ("true" | "false") as orig -> bool_of_string orig |> return
+               | _ -> fail "Parsing error: not a bool")
+        >>| lbool
       in
       let parse_literal =
         choice

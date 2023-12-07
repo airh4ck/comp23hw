@@ -15,7 +15,9 @@
   State
   Llvm_comp
   Pprint_comp_error
-  Peducoml_stdlib)
+  Peducoml_stdlib
+  Riscv
+  Riscv_comp)
  (libraries angstrom llvm)
  (preprocess
   (pps ppx_expect ppx_deriving.show ppx_deriving.eq))

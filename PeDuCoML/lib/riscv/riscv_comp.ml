@@ -50,7 +50,9 @@ let codegen_aexpr env = function
 let codegen_global_scope_function env (func : global_scope_function) =
   let function_name, _, body = func in
   let* body = codegen_aexpr env body in
-  ok @@ define_function function_name body
+  let func = declare_function function_name in
+  build_ret body;
+  ok func
 ;;
 
 let codegen : global_scope_function list -> (unit, riscv_error) Result.t =

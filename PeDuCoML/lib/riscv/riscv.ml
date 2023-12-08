@@ -7,10 +7,16 @@ open Format
 (** [const_int v] returns an integer constant with value [v]. *)
 let const_int num = asprintf "%d" num
 
-(** [define_function name body] returns a new function with name [name] and body [body]. *)
-let define_function name body =
-  printf "%s:\n\taddi sp,sp,-16\n\tsd ra,8(sp)\n\tsd a0,%s\n\tret" name body;
+(** [declare_function name body] returns a new function with name [name] and body [body]. *)
+let declare_function name =
+  printf "%s:\n    addi sp,sp,-32\n    sd ra,24(sp)\n    sd s0, 16(sp)\n" name;
   name
+;;
+
+let build_ret value =
+  printf
+    "    li a0,%s\n    ld ra,8(sp)\n    ld s0,0(sp)\n    addi sp,sp,16\n    ret"
+    value
 ;;
 
 (** [build_load value] creates an [ld dest,value] instruction and returns [dest]. *)

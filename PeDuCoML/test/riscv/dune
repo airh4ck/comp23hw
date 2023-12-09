@@ -2,9 +2,8 @@
  (name riscv_test)
  (modules riscv_test)
  (libraries PeDuCoML.Lib stdio)
- ; (link_deps
- ;  (file ../../runtime/peducoml_runtime.so))
- )
+ (link_deps
+  (file ../../runtime/libruntime.a)))
 
 (cram
- (deps ./riscv_test.exe))
+ (deps ./riscv_test.exe ../../runtime/libruntime.a))

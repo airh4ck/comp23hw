@@ -65,7 +65,9 @@ let declare_function name arg_list =
       in
       (arg, storage_location) :: acc)
   in
-  binding name, arg_list
+  let binding = binding name in
+  Hashtbl.add global_functions name binding;
+  binding, arg_list
 ;;
 
 (** [lookup_function name] returns [Some f] if a function with name [name] exists, and [None] otherwise. *)

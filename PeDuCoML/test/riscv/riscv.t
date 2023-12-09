@@ -16,7 +16,7 @@
   $ rvlinux riscv_test.out | awk 'BEGIN{RS=""} {split($0, arr, "Instructions executed"); split(arr[1], rez, ">>> Program exited, "); print rez[1]; print rez[2]}'
   
   exit code = 2 (0x2)
-
+  
   $ ./riscv_test.exe <<- EOF | tee riscv_test.S
   > let main = print_int 2
   > EOF
@@ -38,4 +38,12 @@
   $ rvlinux riscv_test.out | awk 'BEGIN{RS=""} {split($0, arr, "Instructions executed"); split(arr[1], rez, ">>> Program exited, "); print rez[1]; print rez[2]}'
   2
   exit code = 0 (0x0)
-  
+
+  $ ./riscv_test.exe <<- EOF > riscv_test.S
+  > let ignore x = 42
+  > let main = print_int (ignore 0)
+  > EOF
+  $ riscv64-linux-gnu-gcc -static -o riscv_test.out riscv_test.S -L../../runtime/ -l:libruntime.a
+  $ rvlinux riscv_test.out | awk 'BEGIN{RS=""} {split($0, arr, "Instructions executed"); split(arr[1], rez, ">>> Program exited, "); print rez[1]; print rez[2]}'
+  42
+  exit code = 0 (0x0)

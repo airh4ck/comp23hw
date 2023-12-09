@@ -9,7 +9,16 @@ let const_int num = asprintf "%d" num
 
 (** [declare_function name body] returns a new function with name [name] and body [body]. *)
 let declare_function name =
-  printf "%s:\n    addi sp,sp,-32\n    sd ra,24(sp)\n    sd s0, 16(sp)\n" name;
+  printf
+    "    .globl %s\n\
+    \    .type %s, @function\n\
+     %s:\n\
+    \    addi sp,sp,-16\n\
+    \    sd ra,8(sp)\n\
+    \    sd s0,0(sp)\n"
+    name
+    name
+    name;
   name
 ;;
 

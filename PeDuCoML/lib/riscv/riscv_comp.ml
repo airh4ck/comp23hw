@@ -3,6 +3,7 @@
 (** SPDX-License-Identifier: LGPL-3.0-or-later *)
 
 open Anf
+open Ast
 open Result
 open Riscv
 
@@ -11,8 +12,6 @@ type riscv_error = UnboundVariable of unique_id
 let unbound id = UnboundVariable id
 
 module Environment = struct
-  type t = (unit, riscv_error) Base.Map.Poly.t
-
   let find = Base.Map.Poly.find
   let empty = Base.Map.Poly.empty
   let set = Base.Map.Poly.set
@@ -25,6 +24,21 @@ open Environment
 let string_of_unique_id = function
   | AnfId id -> string_of_int id
   | GlobalScopeId id -> id
+;;
+
+let build_binary_operation = function
+  | Add -> build_add
+  | Sub -> build_sub
+  | Mul -> build_mul
+  | Div -> build_div
+  | AND -> build_and
+  | OR -> build_or
+  | Eq -> build_eq
+  | NEq -> build_neq
+  | LT -> build_lt
+  | GTE -> build_gte
+  | LTE -> build_lte
+  | GT -> build_gt
 ;;
 
 let codegen_immexpr env = function
@@ -41,6 +55,14 @@ let codegen_immexpr env = function
 
 let codegen_cexpr env = function
   | CImm immexpr -> codegen_immexpr env immexpr
+  | CBinaryOperation (bop, left_imm, right_imm) ->
+    let* left = codegen_immexpr env left_imm in
+    let* right = codegen_immexpr env right_imm in
+    (match bop with
+     | Div -> ok @@ build_call (lookup_function_exn "peducoml_divide") [ left; right ]
+     | _ ->
+       let result = build_binary_operation bop left right in
+       ok result)
   | CApplication (callee, arg) ->
     (* TODO: atm application only works for functions with one argument *)
     let* callee = codegen_immexpr env callee in
@@ -56,21 +78,28 @@ let codegen_cexpr env = function
 let rec codegen_aexpr env = function
   | ACExpr cexpr -> codegen_cexpr env cexpr
   | ALet (id, cexpr, aexpr) ->
-    let* cexpr = codegen_cexpr env cexpr in
-    let env = set env ~key:id ~data:cexpr in
+    let* cexpr_rv_value = codegen_cexpr env cexpr in
+    let env = set env ~key:id ~data:cexpr_rv_value in
     codegen_aexpr env aexpr
 ;;
 
 let codegen_global_scope_function env (func : global_scope_function) =
   let function_name, arg_list, body = func in
-  let func, args = declare_function function_name arg_list in
+  let rec count_local_variables = function
+    (* TODO: не учитывает if-expressions *)
+    | ALet (_, _, nested_aexpr) -> 1 + count_local_variables nested_aexpr
+    | _ -> 0
+  in
+  let func_rv_value, args =
+    declare_function function_name arg_list (count_local_variables body)
+  in
   let env =
-    Base.List.fold_right args ~init:env ~f:(fun (arg, loc) acc ->
-      set acc ~key:arg ~data:loc)
+    Base.List.fold_right args ~init:env ~f:(fun (arg, location) acc ->
+      set acc ~key:arg ~data:location)
   in
   let* body = codegen_aexpr env body in
   build_ret body;
-  ok func
+  ok func_rv_value
 ;;
 
 let codegen : global_scope_function list -> (unit, riscv_error) Result.t =

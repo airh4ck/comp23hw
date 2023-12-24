@@ -177,7 +177,7 @@ let build_gte = build_compare_binop "bge"
 let build_lte left_operand right_operand = build_gte right_operand left_operand
 let build_gt left_operand right_operand = build_lt right_operand left_operand
 
-(* TODO: comment *)
+(** [build_ret v] creates a [ret] instruction. *)
 let build_ret value =
   if value.value <> "a0"
   then printf "%s\n" (get_load_instruction "a0" value.value value.typ);
@@ -188,6 +188,7 @@ let build_ret value =
     !current_stack_offset
 ;;
 
+(** [params f] return [Some n], where [n] is the number of arguments of function [f] if there is such function, and [None] otherwise. *)
 let params f =
   match Hashtbl.find_opt global_functions f.value with
   | Some (_, arg_number) -> Some arg_number

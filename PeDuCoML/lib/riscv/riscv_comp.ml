@@ -8,6 +8,9 @@ open Arg_counter
 open Result
 open Riscv
 
+let ( >>= ) = bind
+let ( >>| ) m f = m >>= fun x -> ok (f x)
+
 type riscv_error = UnboundVariable of unique_id
 
 let unbound id = UnboundVariable id
@@ -59,9 +62,6 @@ let codegen_immexpr args_number env = function
        ok (build_load value, number_of_args))
   | _ -> failwith "TODO"
 ;;
-
-let ( >>= ) = bind
-let ( >>| ) m f = m >>= fun x -> ok (f x)
 
 let codegen_cexpr args_number env = function
   | CImm immexpr -> codegen_immexpr args_number env immexpr >>| fst

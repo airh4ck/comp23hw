@@ -189,7 +189,6 @@ static int64_t peducoml_apply8(closure *closure_ptr)
 
 extern int64_t peducoml_apply(int64_t ptr, int64_t arg)
 {
-
     closure *closure_ptr = (closure *)ptr;
     closure_ptr->applied_args[closure_ptr->len_applied_args] = arg;
     closure_ptr->len_applied_args++;

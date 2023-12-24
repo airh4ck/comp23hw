@@ -17,7 +17,8 @@
   Pprint_comp_error
   Peducoml_stdlib
   Riscv
-  Riscv_comp)
+  Riscv_comp
+  Arg_counter)
  (libraries angstrom llvm)
  (preprocess
   (pps ppx_expect ppx_deriving.show ppx_deriving.eq))

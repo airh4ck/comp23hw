@@ -20,10 +20,13 @@ let register s = { value = s; typ = Register }
 let offset s = { value = s; typ = Offset }
 let binding s = { value = s; typ = Binding }
 
-let get_load_instruction = function
-  | Imm -> "li"
-  | Register -> "mv"
-  | _ -> "ld"
+let get_load_instruction dest src = function
+  | Imm -> asprintf "li %s,%s" dest src
+  | Register -> asprintf "mv %s,%s" dest src
+  | Binding ->
+    asprintf "    lui %s, %%hi(%s)\n" dest src
+    ^ asprintf "    addi %s, %s, %%lo(%s)" dest dest src
+  | Offset -> asprintf "ld %s,%s" dest src
 ;;
 
 (* Why 5? *)
@@ -67,7 +70,7 @@ let build_load value =
   | Register -> value
   | _ ->
     let reg = Stack.pop free_registers in
-    printf "    %s %s,%s\n" (get_load_instruction value.typ) reg value.value;
+    printf "%s\n" (get_load_instruction reg value.value value.typ);
     register reg
 ;;
 
@@ -117,7 +120,8 @@ let declare_function name arg_list local_variables_number =
 (** [build_call callee arg_list] stores arguments from [arg_list] and creates a [call callee] instruction. *)
 let build_call callee arg_list =
   Base.List.iteri arg_list ~f:(fun ind arg ->
-    printf "    %s a%d,%s\n" (get_load_instruction arg.typ) ind arg.value);
+    let dest = "a" ^ Int.to_string ind in
+    printf "%s\n" (get_load_instruction dest arg.value arg.typ));
   printf "    call %s\n" callee.value;
   build_store (register "a0")
 ;;
@@ -172,7 +176,7 @@ let build_gt left_operand right_operand = build_lt right_operand left_operand
 (* TODO: comment *)
 let build_ret value =
   if value.value <> "a0"
-  then printf "    %s a0,%s\n" (get_load_instruction value.typ) value.value;
+  then printf "%s\n" (get_load_instruction "a0" value.value value.typ);
   printf
     "    ld ra,%d(sp)\n    ld s0,%d(sp)\n    addi sp,sp,%d\n    ret\n"
     (!current_stack_offset - 8)

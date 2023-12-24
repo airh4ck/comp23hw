@@ -15,7 +15,7 @@
       ret
   $ riscv64-linux-gnu-gcc -static riscv_test.S -o riscv_test.out
   $ rvlinux riscv_test.out | awk 'BEGIN{RS=""} {split($0, arr, "Instructions executed"); split(arr[1], rez, ">>> Program exited, "); printf "%s\n",rez[1]; printf "%s",rez[2]}'
-  
+
   exit code = 2 (0x2)
   $ ./riscv_test.exe <<- EOF | tee riscv_test.S
   > let main = print_int 2
@@ -194,17 +194,33 @@
   $ rvlinux riscv_test.out | awk 'BEGIN{RS=""} {split($0, arr, "Instructions executed"); split(arr[1], rez, ">>> Program exited, "); printf "%s\n",rez[1]; printf "%s",rez[2]}'
   true
   exit code = 0 (0x0)
+$ ./riscv_test.exe <<- EOF > riscv_test.S
+> let main = print_list [1; 2; 3; 4; 5]
+> EOF
+$ riscv64-linux-gnu-gcc -static -o riscv_test.out riscv_test.S -L../../runtime/ -l:libruntime.a
+$ rvlinux riscv_test.out | awk 'BEGIN{RS=""} {split($0, arr, "Instructions executed"); split(arr[1], rez, ">>> Program exited, "); printf "%s\n",rez[1]; printf "%s",rez[2]}'
+[1; 2; 3; 4; 5]
+exit code = 0 (0x0)
+$ ./riscv_test.exe <<- EOF > riscv_test.S
+> let main = print_tuple (10, 5, false, true)
+> EOF
+$ riscv64-linux-gnu-gcc -static -o riscv_test.out riscv_test.S -L../../runtime/ -l:libruntime.a
+$ rvlinux riscv_test.out | awk 'BEGIN{RS=""} {split($0, arr, "Instructions executed"); split(arr[1], rez, ">>> Program exited, "); printf "%s\n",rez[1]; printf "%s",rez[2]}'
+(10, 5, 0, 1)
+exit code = 0 (0x0)
   $ ./riscv_test.exe <<- EOF > riscv_test.S
-  > let main = print_list [1; 2; 3; 4; 5]
+  > let add x y = x + y
+  > let main = print_int (add 1 2)
   > EOF
   $ riscv64-linux-gnu-gcc -static -o riscv_test.out riscv_test.S -L../../runtime/ -l:libruntime.a
   $ rvlinux riscv_test.out | awk 'BEGIN{RS=""} {split($0, arr, "Instructions executed"); split(arr[1], rez, ">>> Program exited, "); printf "%s\n",rez[1]; printf "%s",rez[2]}'
-  [1; 2; 3; 4; 5]
+  3
   exit code = 0 (0x0)
   $ ./riscv_test.exe <<- EOF > riscv_test.S
-  > let main = print_tuple (10, 5, false, true)
+  > let add_and_mul x y z = (x + y) * z
+  > let main = print_int (add_and_mul 1 3 5)
   > EOF
   $ riscv64-linux-gnu-gcc -static -o riscv_test.out riscv_test.S -L../../runtime/ -l:libruntime.a
   $ rvlinux riscv_test.out | awk 'BEGIN{RS=""} {split($0, arr, "Instructions executed"); split(arr[1], rez, ">>> Program exited, "); printf "%s\n",rez[1]; printf "%s",rez[2]}'
-  (10, 5, 0, 1)
+  20
   exit code = 0 (0x0)

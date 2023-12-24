@@ -21,35 +21,39 @@ let offset s = { value = s; typ = Offset }
 let binding s = { value = s; typ = Binding }
 
 let get_load_instruction dest src = function
-  | Imm -> asprintf "li %s,%s" dest src
-  | Register -> asprintf "mv %s,%s" dest src
+  | Imm -> asprintf "    li %s,%s" dest src
+  | Register -> asprintf "    mv %s,%s" dest src
   | Binding ->
     asprintf "    lui %s, %%hi(%s)\n" dest src
     ^ asprintf "    addi %s, %s, %%lo(%s)" dest dest src
-  | Offset -> asprintf "ld %s,%s" dest src
+  | Offset -> asprintf "    ld %s,%s" dest src
 ;;
 
 (* Why 5? *)
 (* Should we declare these functions here??? *)
-let global_functions : (string, rv_value) Hashtbl.t = Hashtbl.create 5
+let global_functions : (string, rv_value * int) Hashtbl.t = Hashtbl.create 5
 
 let _ =
-  Hashtbl.add global_functions "peducoml_alloc_closure" (binding "peducoml_alloc_closure")
+  Hashtbl.add
+    global_functions
+    "peducoml_alloc_closure"
+    (binding "peducoml_alloc_closure", 2)
 ;;
 
-let _ = Hashtbl.add global_functions "peducoml_apply" (binding "peducoml_apply")
-let _ = Hashtbl.add global_functions "peducoml_divide" (binding "peducoml_divide")
-let _ = Hashtbl.add global_functions "print_int" (binding "print_int")
-let _ = Hashtbl.add global_functions "print_char" (binding "print_char")
-let _ = Hashtbl.add global_functions "print_bool" (binding "print_bool")
-let _ = Hashtbl.add global_functions "print_list" (binding "print_list")
-let _ = Hashtbl.add global_functions "print_tuple" (binding "print_tuple")
+let _ = Hashtbl.add global_functions "peducoml_apply" (binding "peducoml_apply", 2)
+let _ = Hashtbl.add global_functions "peducoml_divide" (binding "peducoml_divide", 2)
+let _ = Hashtbl.add global_functions "print_int" (binding "print_int", 1)
+let _ = Hashtbl.add global_functions "print_char" (binding "print_char", 1)
+let _ = Hashtbl.add global_functions "print_bool" (binding "print_bool", 1)
+let _ = Hashtbl.add global_functions "print_list" (binding "print_list", 1)
+let _ = Hashtbl.add global_functions "print_tuple" (binding "print_tuple", 1)
+let ( >>= ) = Option.bind
 
 (** [lookup_function name] returns [Some f] if a function with name [name] exists, and [None] otherwise. *)
-let lookup_function name = Hashtbl.find_opt global_functions name
+let lookup_function name = Hashtbl.find_opt global_functions name >>= fun (f, _) -> Some f
 
 (** [lookup_function_exn name] returns [f] if a function with name [name] exists, and raises [Not_found] otherwise. *)
-let lookup_function_exn name = Hashtbl.find global_functions name
+let lookup_function_exn name = Hashtbl.find global_functions name |> fst
 
 let free_registers : string Stack.t = Stack.create ()
 let _ = Stack.push "t7" free_registers
@@ -113,7 +117,7 @@ let declare_function name arg_list local_variables_number =
       (arg, storage_location) :: acc)
   in
   let binding = binding name in
-  Hashtbl.add global_functions name binding;
+  Hashtbl.add global_functions name (binding, Base.List.length arg_list);
   binding, arg_list
 ;;
 
@@ -182,4 +186,10 @@ let build_ret value =
     (!current_stack_offset - 8)
     (!current_stack_offset - 16)
     !current_stack_offset
+;;
+
+let params f =
+  match Hashtbl.find_opt global_functions f.value with
+  | Some (_, arg_number) -> Some arg_number
+  | None -> None
 ;;

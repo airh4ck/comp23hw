@@ -4,6 +4,7 @@
 
 open Anf
 open Ast
+open Arg_counter
 open Result
 open Riscv
 
@@ -41,74 +42,99 @@ let build_binary_operation = function
   | GT -> build_gt
 ;;
 
-let codegen_immexpr env = function
-  | ImmInt num -> ok @@ const_int num
-  | ImmChar c -> ok @@ const_int (Base.Char.to_int c)
-  | ImmBool v -> ok @@ const_int (Base.Bool.to_int v)
-  | ImmId (GlobalScopeId id) -> ok @@ lookup_function_exn id
+let codegen_immexpr args_number env = function
+  | ImmInt num -> ok (const_int num, 0)
+  | ImmChar c -> ok (Base.Char.to_int c |> const_int, 0)
+  | ImmBool v -> ok (Base.Bool.to_int v |> const_int, 0)
+  | ImmId (GlobalScopeId id) -> ok (lookup_function_exn id, 0)
   | ImmId (AnfId id) ->
     (match find env (AnfId id) with
      | None -> AnfId id |> unbound |> error
-     | Some value -> ok @@ build_load value)
+     | Some value ->
+       let number_of_args =
+         match find args_number (AnfId id) with
+         | Some n -> n
+         | None -> 0
+       in
+       ok (build_load value, number_of_args))
   | _ -> failwith "TODO"
 ;;
 
-let codegen_cexpr env = function
-  | CImm immexpr -> codegen_immexpr env immexpr
+let ( >>= ) = bind
+let ( >>| ) m f = m >>= fun x -> ok (f x)
+
+let codegen_cexpr args_number env = function
+  | CImm immexpr -> codegen_immexpr args_number env immexpr >>| fst
   | CBinaryOperation (bop, left_imm, right_imm) ->
-    let* left = codegen_immexpr env left_imm in
-    let* right = codegen_immexpr env right_imm in
+    let* left, _ = codegen_immexpr args_number env left_imm in
+    let* right, _ = codegen_immexpr args_number env right_imm in
     (match bop with
      | Div -> ok @@ build_call (lookup_function_exn "peducoml_divide") [ left; right ]
      | _ ->
        let result = build_binary_operation bop left right in
        ok result)
   | CApplication (callee, arg) ->
-    (* TODO: atm application only works for functions with one argument *)
-    let* callee = codegen_immexpr env callee in
-    let* arg = codegen_immexpr env arg in
-    ok @@ build_call callee [ arg ]
-    (* let func_ptr =
-      build_call (lookup_function_exn "peducoml_alloc_closure") [ callee; const_int 1 ]
+    let* callee, number_of_args = codegen_immexpr args_number env callee in
+    let number_of_args =
+      match params callee with
+      | Some num -> num
+      | None -> number_of_args
     in
-    ok @@ build_call (lookup_function_exn "peducoml_apply") [ func_ptr; arg ] *)
+    let func_ptr =
+      build_call
+        (lookup_function_exn "peducoml_alloc_closure")
+        [ callee; const_int number_of_args ]
+    in
+    let* arg, _ = codegen_immexpr args_number env arg in
+    ok @@ build_call (lookup_function_exn "peducoml_apply") [ func_ptr; arg ]
   | _ -> failwith "TODO"
 ;;
 
-let rec codegen_aexpr env = function
-  | ACExpr cexpr -> codegen_cexpr env cexpr
+let rec codegen_aexpr args_number env = function
+  | ACExpr cexpr -> codegen_cexpr args_number env cexpr
   | ALet (id, cexpr, aexpr) ->
-    let* cexpr_rv_value = codegen_cexpr env cexpr in
+    let* cexpr_rv_value = codegen_cexpr args_number env cexpr in
     let env = set env ~key:id ~data:cexpr_rv_value in
-    codegen_aexpr env aexpr
+    codegen_aexpr args_number env aexpr
 ;;
 
-let codegen_global_scope_function env (func : global_scope_function) =
+let codegen_global_scope_function args_numbers env (func : global_scope_function) =
   let function_name, arg_list, body = func in
-  let rec count_local_variables = function
+  let rec count_local_variables acc = function
     (* TODO: не учитывает if-expressions *)
-    | ALet (_, _, nested_aexpr) -> 1 + count_local_variables nested_aexpr
-    | _ -> 0
+    | ALet (_, body, nested_aexpr) ->
+      let acc = acc + 1 in
+      (* local var *)
+      let acc =
+        acc
+        +
+        match body with
+        | CApplication _ | CBinaryOperation _ -> 1
+        | _ -> 0
+      in
+      count_local_variables (acc + 1) nested_aexpr
+    | _ -> acc
   in
   let func_rv_value, args =
-    declare_function function_name arg_list (count_local_variables body)
+    declare_function function_name arg_list (count_local_variables 0 body)
   in
   let env =
     Base.List.fold_right args ~init:env ~f:(fun (arg, location) acc ->
       set acc ~key:arg ~data:location)
   in
-  let* body = codegen_aexpr env body in
+  let* body = codegen_aexpr (Base.Map.find_exn args_numbers function_name) env body in
   build_ret body;
   ok func_rv_value
 ;;
 
-let codegen : global_scope_function list -> (unit, riscv_error) Result.t =
+let codegen program : (unit, riscv_error) Result.t =
   (* Format.printf "    .option pic\n"; *)
+  let args_number = gather_args_numbers program in
   let rec codegen env = function
     | [] -> ok ()
     | head :: tail ->
-      let* _ = codegen_global_scope_function env head in
+      let* _ = codegen_global_scope_function args_number env head in
       codegen env tail
   in
-  codegen empty
+  codegen empty program
 ;;

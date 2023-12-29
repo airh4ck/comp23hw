@@ -18,7 +18,8 @@
   Peducoml_stdlib
   Riscv
   Riscv_comp
-  Arg_counter)
+  Arg_counter
+  Peducoml_runtime)
  (libraries angstrom llvm)
  (preprocess
   (pps ppx_expect ppx_deriving.show ppx_deriving.eq))

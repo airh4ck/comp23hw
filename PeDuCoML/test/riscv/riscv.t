@@ -224,3 +224,12 @@ exit code = 0 (0x0)
   $ rvlinux riscv_test.out | awk 'BEGIN{RS=""} {split($0, arr, "Instructions executed"); split(arr[1], rez, ">>> Program exited, "); printf "%s\n",rez[1]; printf "%s",rez[2]}'
   20
   exit code = 0 (0x0)
+  $ ./riscv_test.exe <<- EOF > riscv_test.S
+  > let add x y = x + y
+  > let partial_add x = add x
+  > let main = print_int (partial_add 1 2)
+  > EOF
+  $ riscv64-linux-gnu-gcc -static -o riscv_test.out riscv_test.S -L../../runtime/ -l:libruntime.a
+  $ rvlinux riscv_test.out | awk 'BEGIN{RS=""} {split($0, arr, "Instructions executed"); split(arr[1], rez, ">>> Program exited, "); printf "%s\n",rez[1]; printf "%s",rez[2]}'
+  3
+  exit code = 0 (0x0)

@@ -47,6 +47,24 @@ let _ = Hashtbl.add global_functions "print_char" (binding "print_char", 1)
 let _ = Hashtbl.add global_functions "print_bool" (binding "print_bool", 1)
 let _ = Hashtbl.add global_functions "print_list" (binding "print_list", 1)
 let _ = Hashtbl.add global_functions "print_tuple" (binding "print_tuple", 1)
+let _ = Hashtbl.add global_functions "print_string" (binding "print_string", 1)
+
+let _ =
+  Hashtbl.add global_functions "peducoml_alloc_list" (binding "peducoml_alloc_list", 0)
+;;
+
+let _ =
+  Hashtbl.add global_functions "peducoml_add_to_list" (binding "peducoml_add_to_list", 2)
+;;
+
+let _ =
+  Hashtbl.add global_functions "peducoml_alloc_tuple" (binding "peducoml_alloc_tuple", 1)
+;;
+
+let _ =
+  Hashtbl.add global_functions "peducoml_fill_tuple" (binding "peducoml_fill_tuple", 2)
+;;
+
 let ( >>= ) = Option.bind
 
 (** [lookup_function name] returns [Some f] if a function with name [name] exists, and [None] otherwise. *)

@@ -45,7 +45,16 @@ let build_binary_operation = function
   | GT -> build_gt
 ;;
 
-let codegen_immexpr args_number env = function
+let rec codegen_immexpr args_number env =
+  let list_helper imm_list =
+    let allocated_list = build_call (lookup_function_exn "peducoml_alloc_list") [] in
+    let add = lookup_function_exn "peducoml_add_to_list" in
+    Base.List.fold (Base.List.rev imm_list) ~init:(ok allocated_list) ~f:(fun acc elem ->
+      let* elem, _ = codegen_immexpr args_number env elem in
+      let* acc = acc in
+      ok @@ build_call add [ acc; elem ])
+  in
+  function
   | ImmInt num -> ok (const_int num, 0)
   | ImmChar c -> ok (Base.Char.to_int c |> const_int, 0)
   | ImmBool v -> ok (Base.Bool.to_int v |> const_int, 0)
@@ -60,7 +69,27 @@ let codegen_immexpr args_number env = function
          | None -> 0
        in
        ok (build_load value, number_of_args))
-  | _ -> failwith "TODO"
+  | ImmString str ->
+    let* lst =
+      Base.String.to_list str |> Base.List.map ~f:(fun x -> ImmChar x) |> list_helper
+    in
+    ok (lst, 0)
+  | ImmList imm_list ->
+    let* lst = list_helper imm_list in
+    ok (lst, 0)
+  | ImmTuple imm_list ->
+    let allocated_tuple =
+      build_call
+        (lookup_function_exn "peducoml_alloc_tuple")
+        [ Base.List.length imm_list |> const_int ]
+    in
+    let* result =
+      Base.List.fold imm_list ~init:(ok allocated_tuple) ~f:(fun acc imm ->
+        let* elem, _ = codegen_immexpr args_number env imm in
+        let* acc = acc in
+        ok @@ build_call (lookup_function_exn "peducoml_fill_tuple") [ acc; elem ])
+    in
+    ok (result, 0)
 ;;
 
 let codegen_cexpr args_number env = function

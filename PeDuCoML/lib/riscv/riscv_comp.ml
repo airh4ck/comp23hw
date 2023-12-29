@@ -116,7 +116,10 @@ let codegen_global_scope_function args_numbers env (func : global_scope_function
     | _ -> acc
   in
   let func_rv_value, args =
-    declare_function function_name arg_list (count_local_variables 0 body)
+    declare_function
+      function_name
+      arg_list
+      (count_local_variables 0 body + Base.List.length arg_list)
   in
   let env =
     Base.List.fold_right args ~init:env ~f:(fun (arg, location) acc ->

@@ -113,7 +113,9 @@ let declare_function name arg_list local_variables_number =
   current_s0_offset := -24;
   let arg_list =
     Base.List.foldi arg_list ~init:[] ~f:(fun ind acc arg ->
-      let storage_location = "a" ^ string_of_int ind |> register in
+      printf "    sd a%d,%d(s0)\n" ind !current_s0_offset;
+      let storage_location = string_of_int !current_s0_offset ^ "(s0)" |> offset in
+      current_s0_offset := !current_s0_offset - 8;
       (arg, storage_location) :: acc)
   in
   let binding = binding name in

@@ -45,6 +45,11 @@ let build_binary_operation = function
   | GT -> build_gt
 ;;
 
+let build_unary_operation = function
+  | Minus -> build_neg
+  | Not -> build_not
+;;
+
 let rec codegen_immexpr args_number env =
   let list_helper imm_list =
     let allocated_list = build_call (lookup_function_exn "peducoml_alloc_list") [] in
@@ -116,6 +121,10 @@ let codegen_cexpr args_number env = function
     in
     let* arg, _ = codegen_immexpr args_number env arg in
     ok @@ build_call (lookup_function_exn "peducoml_apply") [ func_ptr; arg ]
+  | CUnaryOperation (op, arg) ->
+    let* arg, _ = codegen_immexpr args_number env arg in
+    let result = build_unary_operation op arg in
+    ok result
   | _ -> failwith "TODO"
 ;;
 

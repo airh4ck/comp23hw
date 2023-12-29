@@ -199,20 +199,20 @@
   $ rvlinux riscv_test.out | awk 'BEGIN{RS=""} {split($0, arr, "Instructions executed"); split(arr[1], rez, ">>> Program exited, "); printf "%s\n",rez[1]; printf "%s",rez[2]}'
   true
   exit code = 0 (0x0)
-$ ./riscv_test.exe <<- EOF > riscv_test.S
-> let main = print_list [1; 2; 3; 4; 5]
-> EOF
-$ riscv64-linux-gnu-gcc -static -o riscv_test.out riscv_test.S -L../../runtime/ -l:libruntime.a
-$ rvlinux riscv_test.out | awk 'BEGIN{RS=""} {split($0, arr, "Instructions executed"); split(arr[1], rez, ">>> Program exited, "); printf "%s\n",rez[1]; printf "%s",rez[2]}'
-[1; 2; 3; 4; 5]
-exit code = 0 (0x0)
-$ ./riscv_test.exe <<- EOF > riscv_test.S
-> let main = print_tuple (10, 5, false, true)
-> EOF
-$ riscv64-linux-gnu-gcc -static -o riscv_test.out riscv_test.S -L../../runtime/ -l:libruntime.a
-$ rvlinux riscv_test.out | awk 'BEGIN{RS=""} {split($0, arr, "Instructions executed"); split(arr[1], rez, ">>> Program exited, "); printf "%s\n",rez[1]; printf "%s",rez[2]}'
-(10, 5, 0, 1)
-exit code = 0 (0x0)
+  $ ./riscv_test.exe <<- EOF > riscv_test.S
+  > let main = print_list [1; 2; 3; 4; 5]
+  > EOF
+  $ riscv64-linux-gnu-gcc -static -o riscv_test.out riscv_test.S -L../../runtime/ -l:libruntime.a
+  $ rvlinux riscv_test.out | awk 'BEGIN{RS=""} {split($0, arr, "Instructions executed"); split(arr[1], rez, ">>> Program exited, "); printf "%s\n",rez[1]; printf "%s",rez[2]}'
+  [1; 2; 3; 4; 5]
+  exit code = 0 (0x0)
+  $ ./riscv_test.exe <<- EOF > riscv_test.S
+  > let main = print_tuple (10, 5, false, true)
+  > EOF
+  $ riscv64-linux-gnu-gcc -static -o riscv_test.out riscv_test.S -L../../runtime/ -l:libruntime.a
+  $ rvlinux riscv_test.out | awk 'BEGIN{RS=""} {split($0, arr, "Instructions executed"); split(arr[1], rez, ">>> Program exited, "); printf "%s\n",rez[1]; printf "%s",rez[2]}'
+  (10, 5, 0, 1)
+  exit code = 0 (0x0)
   $ ./riscv_test.exe <<- EOF > riscv_test.S
   > let add x y = x + y
   > let main = print_int (add 1 2)
@@ -237,4 +237,11 @@ exit code = 0 (0x0)
   $ riscv64-linux-gnu-gcc -static -o riscv_test.out riscv_test.S -L../../runtime/ -l:libruntime.a
   $ rvlinux riscv_test.out | awk 'BEGIN{RS=""} {split($0, arr, "Instructions executed"); split(arr[1], rez, ">>> Program exited, "); printf "%s\n",rez[1]; printf "%s",rez[2]}'
   3
+  exit code = 0 (0x0)
+  $ ./riscv_test.exe <<- EOF > riscv_test.S
+  > let main = print_string "wow, this marvel of thought works!"
+  > EOF
+  $ riscv64-linux-gnu-gcc -static -o riscv_test.out riscv_test.S -L../../runtime/ -l:libruntime.a
+  $ rvlinux riscv_test.out | awk 'BEGIN{RS=""} {split($0, arr, "Instructions executed"); split(arr[1], rez, ">>> Program exited, "); printf "%s\n",rez[1]; printf "%s",rez[2]}'
+  wow, this marvel of thought works!
   exit code = 0 (0x0)

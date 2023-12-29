@@ -125,6 +125,10 @@ let codegen_cexpr args_number env = function
     let* arg, _ = codegen_immexpr args_number env arg in
     let result = build_unary_operation op arg in
     ok result
+  | CConstructList (head, tail) ->
+    let* head, _ = codegen_immexpr args_number env head in
+    let* tail, _ = codegen_immexpr args_number env tail in
+    ok @@ build_call (lookup_function_exn "peducoml_add_to_list") [ tail; head ]
   | _ -> failwith "TODO"
 ;;
 
@@ -147,7 +151,7 @@ let codegen_global_scope_function args_numbers env (func : global_scope_function
         acc
         +
         match body with
-        | CApplication _ | CBinaryOperation _ -> 1
+        | CApplication _ | CBinaryOperation _ | CUnaryOperation _ -> 1
         | _ -> 0
       in
       count_local_variables (acc + 1) nested_aexpr

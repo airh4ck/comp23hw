@@ -14,8 +14,7 @@
       addi sp,sp,16
       ret
   $ riscv64-linux-gnu-gcc -static riscv_test.S -o riscv_test.out
-  $ rvlinux riscv_test.out | awk 'BEGIN{RS=""} {split($0, arr, "Instructions executed"); split(arr[1], rez, ">>> Program exited, "); printf "%s\n",rez[1]; printf "%s",rez[2]}'
-
+  $ rvlinux riscv_test.out | awk 'BEGIN{RS=""} {split($0, arr, "Instructions executed"); split(arr[1], rez, ">>> Program exited, "); if (length(rez[1]) > 0) { printf "%s\n",rez[1] }; printf "%s",rez[2]}'
   exit code = 2 (0x2)
   $ ./riscv_test.exe <<- EOF | tee riscv_test.S
   > let main = print_int 2
@@ -23,18 +22,24 @@
       .globl main
       .type main, @function
   main:
-      addi sp,sp,-24
-      sd ra,16(sp)
-      sd s0,8(sp)
-      addi s0,sp,24
-      li a0,2
-      call print_int
+      addi sp,sp,-40
+      sd ra,32(sp)
+      sd s0,24(sp)
+      addi s0,sp,40
+      lui a0, %hi(print_int)
+      addi a0, a0, %lo(print_int)
+      li a1,1
+      call peducoml_alloc_closure
       sd a0,-24(s0)
-      ld t0,-24(s0)
+      ld a0,-24(s0)
+      li a1,2
+      call peducoml_apply
+      sd a0,-32(s0)
+      ld t0,-32(s0)
       mv a0,t0
-      ld ra,16(sp)
-      ld s0,8(sp)
-      addi sp,sp,24
+      ld ra,32(sp)
+      ld s0,24(sp)
+      addi sp,sp,40
       ret
   $ riscv64-linux-gnu-gcc -static -o riscv_test.out riscv_test.S -L../../runtime/ -l:libruntime.a
   $ rvlinux riscv_test.out | awk 'BEGIN{RS=""} {split($0, arr, "Instructions executed"); split(arr[1], rez, ">>> Program exited, "); printf "%s\n",rez[1]; printf "%s",rez[2]}'

@@ -197,3 +197,15 @@ let params f =
   | Some (_, arg_number) -> Some arg_number
   | None -> None
 ;;
+
+let build_neg value =
+  let value = build_load value in
+  printf "    neg %s,%s\n" value.value value.value;
+  build_store value
+;;
+
+let build_not value =
+  let value = build_load value in
+  printf "    xori %s,%s,-1\n" value.value value.value;
+  build_store value
+;;

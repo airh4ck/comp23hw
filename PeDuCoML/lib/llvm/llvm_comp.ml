@@ -288,6 +288,7 @@ let codegen_global_scope_function args_numbers env (func : global_scope_function
 ;;
 
 open Peducoml_stdlib
+open Peducoml_runtime
 open Typing
 
 let codegen program =
@@ -296,41 +297,11 @@ let codegen program =
     | _ -> current
   in
   let env =
-    Base.List.map stdlib ~f:(fun (id, fun_type) ->
+    Base.List.map (runtime @ stdlib) ~f:(fun (id, fun_type) ->
       declare_function
         id
         (function_type i64 (Array.make (count_args 0 @@ snd fun_type) i64))
         the_module)
-  in
-  let env =
-    declare_function
-      "peducoml_alloc_closure"
-      (function_type i64 [| i64; i64 |])
-      the_module
-    :: declare_function "peducoml_apply" (function_type i64 [| i64; i64 |]) the_module
-    :: declare_function "peducoml_apply0" (function_type i64 [| i64 |]) the_module
-    :: declare_function "peducoml_alloc_list" (function_type i64 [||]) the_module
-    :: declare_function
-         "peducoml_add_to_list"
-         (function_type i64 [| i64; i64 |])
-         the_module
-    :: declare_function
-         "peducoml_list_field"
-         (function_type i64 [| i64; i64 |])
-         the_module
-    :: declare_function "peducoml_tail" (function_type i64 [| i64 |]) the_module
-    :: declare_function "peducoml_list_length" (function_type i64 [| i64 |]) the_module
-    :: declare_function "peducoml_alloc_tuple" (function_type i64 [| i64 |]) the_module
-    :: declare_function "peducoml_divide" (function_type i64 [| i64; i64 |]) the_module
-    :: declare_function
-         "peducoml_fill_tuple"
-         (function_type i64 [| i64; i64 |])
-         the_module
-    :: declare_function
-         "peducoml_tuple_field"
-         (function_type i64 [| i64; i64 |])
-         the_module
-    :: env
   in
   let args_numbers = gather_args_numbers program in
   let rec codegen acc env = function

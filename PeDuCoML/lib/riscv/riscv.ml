@@ -3,6 +3,9 @@
 (** SPDX-License-Identifier: LGPL-3.0-or-later *)
 
 open Format
+open Typing
+open Peducoml_runtime
+open Peducoml_stdlib
 
 type rv_type =
   | Imm
@@ -31,38 +34,18 @@ let get_load_instruction dest src = function
 
 (* Why 5? *)
 (* Should we declare these functions here??? *)
-let global_functions : (string, rv_value * int) Hashtbl.t = Hashtbl.create 5
-
-let _ =
-  Hashtbl.add
-    global_functions
-    "peducoml_alloc_closure"
-    (binding "peducoml_alloc_closure", 2)
-;;
-
-let _ = Hashtbl.add global_functions "peducoml_apply" (binding "peducoml_apply", 2)
-let _ = Hashtbl.add global_functions "peducoml_divide" (binding "peducoml_divide", 2)
-let _ = Hashtbl.add global_functions "print_int" (binding "print_int", 1)
-let _ = Hashtbl.add global_functions "print_char" (binding "print_char", 1)
-let _ = Hashtbl.add global_functions "print_bool" (binding "print_bool", 1)
-let _ = Hashtbl.add global_functions "print_list" (binding "print_list", 1)
-let _ = Hashtbl.add global_functions "print_tuple" (binding "print_tuple", 1)
-let _ = Hashtbl.add global_functions "print_string" (binding "print_string", 1)
-
-let _ =
-  Hashtbl.add global_functions "peducoml_alloc_list" (binding "peducoml_alloc_list", 0)
+let global_functions : (string, rv_value * int) Hashtbl.t =
+  Hashtbl.create (Base.List.length runtime + Base.List.length stdlib)
 ;;
 
 let _ =
-  Hashtbl.add global_functions "peducoml_add_to_list" (binding "peducoml_add_to_list", 2)
-;;
-
-let _ =
-  Hashtbl.add global_functions "peducoml_alloc_tuple" (binding "peducoml_alloc_tuple", 1)
-;;
-
-let _ =
-  Hashtbl.add global_functions "peducoml_fill_tuple" (binding "peducoml_fill_tuple", 2)
+  let rec count_args current = function
+    | TArr (_, out_ty) -> count_args (current + 1) out_ty
+    | _ -> current
+  in
+  Base.List.iter (runtime @ stdlib) ~f:(fun (id, fun_type) ->
+    let args_count = snd fun_type |> count_args 0 in
+    Hashtbl.add global_functions id (binding id, args_count))
 ;;
 
 let ( >>= ) = Option.bind

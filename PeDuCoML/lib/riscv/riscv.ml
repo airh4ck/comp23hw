@@ -68,6 +68,7 @@ let _ = Stack.push "t0" free_registers
 let current_stack_offset = ref 0
 let current_s0_offset = ref 0
 let current_condition_number = ref 0
+let current_label_ind = ref 0
 
 (** [build_load value] creates an [<load_instruction> dest,value] instruction and returns [dest]. *)
 let build_load value =
@@ -208,4 +209,35 @@ let build_not value =
   let value = build_load value in
   printf "    xori %s,%s,-1\n" value.value value.value;
   build_store value
+;;
+
+let get_basicblock label =
+  current_label_ind := !current_label_ind + 1;
+  asprintf ".L%s%d" label !current_label_ind
+;;
+
+let build_basicblock label = printf "%s:\n" label
+
+let build_beq value label =
+  let zero = build_load (const_int 0) in
+  let value = build_load value in
+  printf "    beq %s,%s,%s\n" value.value zero.value label
+;;
+
+let build_jump label = printf "    j %s\n" label
+let common_register = ref None
+
+let build_label_ret value =
+  let reg =
+    match !common_register with
+    | None ->
+      let reg = Stack.pop free_registers in
+      common_register := Some reg;
+      reg
+    | Some reg ->
+      common_register := None;
+      reg
+  in
+  printf "%s\n" @@ get_load_instruction reg value.value value.typ;
+  reg |> register
 ;;

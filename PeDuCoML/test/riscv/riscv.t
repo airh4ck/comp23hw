@@ -268,12 +268,17 @@
   $ rvlinux riscv_test.out | awk 'BEGIN{RS=""} {split($0, arr, "Instructions executed"); split(arr[1], rez, ">>> Program exited, "); printf "%s\n",rez[1]; printf "%s",rez[2]}'
   false
   exit code = 0 (0x0)
-  $ ./riscv_test.exe <<- EOF > riscv_test.S
+  $ ./riscv_test.exe <<- EOF | tee riscv_test.S
   > let main =
-  >   let lst = 1 :: [2; 3] in
-  >   print_list lst
+  >   if true then print_int 1 else print_int 0
   > EOF
   $ riscv64-linux-gnu-gcc -static -o riscv_test.out riscv_test.S -L../../runtime/ -l:libruntime.a
   $ rvlinux riscv_test.out | awk 'BEGIN{RS=""} {split($0, arr, "Instructions executed"); split(arr[1], rez, ">>> Program exited, "); printf "%s\n",rez[1]; printf "%s",rez[2]}'
-  [1; 2; 3]
+  1
   exit code = 0 (0x0)
+  $ ./riscv_test.exe <<- EOF | tee riscv_test.S
+  > let rec factorial n = if n <= 1 then 1 else n * factorial (n - 1)
+  > let main = print_int (factorial 8)
+  > EOF
+  $ riscv64-linux-gnu-gcc -static -o riscv_test.out riscv_test.S -L../../runtime/ -l:libruntime.a
+  $ rvlinux riscv_test.out | awk 'BEGIN{RS=""} {split($0, arr, "Instructions executed"); split(arr[1], rez, ">>> Program exited, "); printf "%s\n",rez[1]; printf "%s",rez[2]}'

@@ -97,7 +97,7 @@ let rec codegen_immexpr args_number env =
     ok (result, 0)
 ;;
 
-let codegen_cexpr args_number env = function
+let rec codegen_cexpr args_number env = function
   | CImm immexpr -> codegen_immexpr args_number env immexpr >>| fst
   | CBinaryOperation (bop, left_imm, right_imm) ->
     let* left, _ = codegen_immexpr args_number env left_imm in
@@ -129,10 +129,21 @@ let codegen_cexpr args_number env = function
     let* head, _ = codegen_immexpr args_number env head in
     let* tail, _ = codegen_immexpr args_number env tail in
     ok @@ build_call (lookup_function_exn "peducoml_add_to_list") [ tail; head ]
-  | _ -> failwith "TODO"
-;;
+  | CIf (condition, true_branch, false_branch) ->
+    let* condition, _ = codegen_immexpr args_number env condition in
+    let false_label = get_basicblock "FB" in
+    let joinup_label = get_basicblock "JB" in
+    build_beq condition false_label;
+    let* true_branch = codegen_aexpr args_number env true_branch in
+    let _ = build_label_ret true_branch in
+    build_jump joinup_label;
+    build_basicblock false_label;
+    let* false_branch = codegen_aexpr args_number env false_branch in
+    let phi = build_label_ret false_branch in
+    build_basicblock joinup_label;
+    ok phi
 
-let rec codegen_aexpr args_number env = function
+and codegen_aexpr args_number env = function
   | ACExpr cexpr -> codegen_cexpr args_number env cexpr
   | ALet (id, cexpr, aexpr) ->
     let* cexpr_rv_value = codegen_cexpr args_number env cexpr in

@@ -4,14 +4,14 @@
       .globl main
       .type main, @function
   main:
-      addi sp,sp,-16
-      sd ra,8(sp)
-      sd s0,0(sp)
-      addi s0,sp,16
+      addi sp,sp,-24
+      sd ra,16(sp)
+      sd s0,8(sp)
+      addi s0,sp,24
       li a0,2
-      ld ra,8(sp)
-      ld s0,0(sp)
-      addi sp,sp,16
+      ld ra,16(sp)
+      ld s0,8(sp)
+      addi sp,sp,24
       ret
   $ riscv64-linux-gnu-gcc -static riscv_test.S -o riscv_test.out
   $ rvlinux riscv_test.out | awk 'BEGIN{RS=""} {split($0, arr, "Instructions executed"); split(arr[1], rez, ">>> Program exited, "); if (length(rez[1]) > 0) { printf "%s\n",rez[1] }; printf "%s",rez[2]}'
@@ -268,7 +268,7 @@
   $ rvlinux riscv_test.out | awk 'BEGIN{RS=""} {split($0, arr, "Instructions executed"); split(arr[1], rez, ">>> Program exited, "); printf "%s\n",rez[1]; printf "%s",rez[2]}'
   false
   exit code = 0 (0x0)
-  $ ./riscv_test.exe <<- EOF | tee riscv_test.S
+  $ ./riscv_test.exe <<- EOF > riscv_test.S
   > let main =
   >   if true then print_int 1 else print_int 0
   > EOF
@@ -276,9 +276,71 @@
   $ rvlinux riscv_test.out | awk 'BEGIN{RS=""} {split($0, arr, "Instructions executed"); split(arr[1], rez, ">>> Program exited, "); printf "%s\n",rez[1]; printf "%s",rez[2]}'
   1
   exit code = 0 (0x0)
-  $ ./riscv_test.exe <<- EOF | tee riscv_test.S
-  > let rec factorial n = if n <= 1 then 1 else n * factorial (n - 1)
-  > let main = print_int (factorial 8)
+  $ ./riscv_test.exe <<- EOF > riscv_test.S
+  > let main = 
+  >   let rez = compare_strings_eq "abcdef" "abcdef" in
+  >   print_bool rez
   > EOF
   $ riscv64-linux-gnu-gcc -static -o riscv_test.out riscv_test.S -L../../runtime/ -l:libruntime.a
   $ rvlinux riscv_test.out | awk 'BEGIN{RS=""} {split($0, arr, "Instructions executed"); split(arr[1], rez, ">>> Program exited, "); printf "%s\n",rez[1]; printf "%s",rez[2]}'
+  true
+  exit code = 0 (0x0)
+  $ ./riscv_test.exe <<- EOF > riscv_test.S
+  > let main = print_bool (compare_strings_gt "akf" "bhrefhwfoiwefohefowhb23r384723")
+  > EOF
+  $ riscv64-linux-gnu-gcc -static -o riscv_test.out riscv_test.S -L../../runtime/ -l:libruntime.a
+  $ rvlinux riscv_test.out | awk 'BEGIN{RS=""} {split($0, arr, "Instructions executed"); split(arr[1], rez, ">>> Program exited, "); printf "%s\n",rez[1]; printf "%s",rez[2]}'
+  false
+  exit code = 0 (0x0)
+  $ ./riscv_test.exe <<- EOF > riscv_test.S
+  > let main = print_bool (compare_strings_neq "" "")
+  > EOF
+  $ riscv64-linux-gnu-gcc -static -o riscv_test.out riscv_test.S -L../../runtime/ -l:libruntime.a
+  $ rvlinux riscv_test.out | awk 'BEGIN{RS=""} {split($0, arr, "Instructions executed"); split(arr[1], rez, ">>> Program exited, "); printf "%s\n",rez[1]; printf "%s",rez[2]}'
+  false
+  exit code = 0 (0x0)
+  $ ./riscv_test.exe <<- EOF > riscv_test.S
+  > let main = print_bool (compare_strings_lt "iiub" "iiua")
+  > EOF
+  $ riscv64-linux-gnu-gcc -static -o riscv_test.out riscv_test.S -L../../runtime/ -l:libruntime.a
+  $ rvlinux riscv_test.out | awk 'BEGIN{RS=""} {split($0, arr, "Instructions executed"); split(arr[1], rez, ">>> Program exited, "); printf "%s\n",rez[1]; printf "%s",rez[2]}'
+  false
+  exit code = 0 (0x0)
+  $ ./riscv_test.exe <<- EOF > riscv_test.S
+  > let main = print_bool (compare_strings_lte "iiua" "iiua")
+  > EOF
+  $ riscv64-linux-gnu-gcc -static -o riscv_test.out riscv_test.S -L../../runtime/ -l:libruntime.a
+  $ rvlinux riscv_test.out | awk 'BEGIN{RS=""} {split($0, arr, "Instructions executed"); split(arr[1], rez, ">>> Program exited, "); printf "%s\n",rez[1]; printf "%s",rez[2]}'
+  true
+  exit code = 0 (0x0)
+  $ ./riscv_test.exe <<- EOF > riscv_test.S
+  > let main = print_bool (compare_strings_gte "fe" "aujw9")
+  > EOF
+  $ riscv64-linux-gnu-gcc -static -o riscv_test.out riscv_test.S -L../../runtime/ -l:libruntime.a
+  $ rvlinux riscv_test.out | awk 'BEGIN{RS=""} {split($0, arr, "Instructions executed"); split(arr[1], rez, ">>> Program exited, "); printf "%s\n",rez[1]; printf "%s",rez[2]}'
+  true
+  exit code = 0 (0x0)
+  $ ./riscv_test.exe <<- EOF > riscv_test.S
+  > let rec factorial n = if n <= 1 then 1 else n * factorial (n - 1)
+  > let main = print_int (factorial 6)
+  > EOF
+  $ riscv64-linux-gnu-gcc -static -o riscv_test.out riscv_test.S -L../../runtime/ -l:libruntime.a
+  $ rvlinux riscv_test.out | awk 'BEGIN{RS=""} {split($0, arr, "Instructions executed"); split(arr[1], rez, ">>> Program exited, "); printf "%s\n",rez[1]; printf "%s",rez[2]}'
+  720
+  exit code = 0 (0x0)
+  $ ./riscv_test.exe <<- EOF > riscv_test.S
+  > let rec factorial n = if n <= 1 then 1 else n * factorial (n - 1)
+  > let main = print_int (factorial 5)
+  > EOF
+  $ riscv64-linux-gnu-gcc -static -o riscv_test.out riscv_test.S -L../../runtime/ -l:libruntime.a
+  $ rvlinux riscv_test.out | awk 'BEGIN{RS=""} {split($0, arr, "Instructions executed"); split(arr[1], rez, ">>> Program exited, "); printf "%s\n",rez[1]; printf "%s",rez[2]}'
+  120
+  exit code = 0 (0x0)
+  $ ./riscv_test.exe <<- EOF > riscv_test.S
+  > let rec factorial n = if n <= 1 then 1 else n * factorial (n - 1)
+  > let main = print_int (factorial 1)
+  > EOF
+  $ riscv64-linux-gnu-gcc -static -o riscv_test.out riscv_test.S -L../../runtime/ -l:libruntime.a
+  $ rvlinux riscv_test.out | awk 'BEGIN{RS=""} {split($0, arr, "Instructions executed"); split(arr[1], rez, ">>> Program exited, "); printf "%s\n",rez[1]; printf "%s",rez[2]}'
+  1
+  exit code = 0 (0x0)

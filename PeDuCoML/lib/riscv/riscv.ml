@@ -7,6 +7,9 @@ open Typing
 open Peducoml_runtime
 open Peducoml_stdlib
 
+let generated_asm = ref ""
+let append code = generated_asm := !generated_asm ^ code
+
 type rv_type =
   | Imm
   | Register
@@ -17,6 +20,29 @@ type rv_value =
   { value : string
   ; typ : rv_type
   }
+
+let replace_offset offset =
+  let with_replaced_stack_offset =
+    Base.String.substr_replace_all
+      !generated_asm
+      ~pattern:"STACK_OFFSET"
+      ~with_:(string_of_int offset)
+  in
+  let with_replaced_ra_offset =
+    Base.String.substr_replace_first
+      with_replaced_stack_offset
+      ~pattern:"RA_OFFSET"
+      ~with_:(string_of_int (offset - 8))
+  in
+  let with_replaced_s0_offset =
+    Base.String.substr_replace_first
+      with_replaced_ra_offset
+      ~pattern:"S0_OFFSET"
+      ~with_:(string_of_int (offset - 16))
+  in
+  generated_asm := "";
+  with_replaced_s0_offset
+;;
 
 let imm s = { value = s; typ = Imm }
 let register s = { value = s; typ = Register }
@@ -76,14 +102,14 @@ let build_load value =
   | Register -> value
   | _ ->
     let reg = Stack.pop free_registers in
-    printf "%s\n" (get_load_instruction reg value.value value.typ);
+    sprintf "%s\n" (get_load_instruction reg value.value value.typ) |> append;
     register reg
 ;;
 
 let build_store value =
   let stack_location = string_of_int !current_s0_offset ^ "(s0)" in
   current_s0_offset := !current_s0_offset - 8;
-  printf "    sd %s,%s\n" value.value stack_location;
+  sprintf "    sd %s,%s\n" value.value stack_location |> append;
   offset stack_location
 ;;
 
@@ -94,28 +120,23 @@ let const_int num = asprintf "%d" num |> imm
 
     For example, [declare_function "main" ["arg1", "arg2"]] will return a new function with name ["main"] and a list [[("arg1", "a0"), ("arg2", "a1")]],
     meaning ["arg1"] will be stored in register ["a0"] and ["arg2"] - in register ["a1"]. *)
-let declare_function name arg_list local_variables_number =
-  let stack_offset = (local_variables_number * 8) + 16 in
-  printf
+let declare_function name arg_list =
+  sprintf
     "    .globl %s\n\
     \    .type %s, @function\n\
      %s:\n\
-    \    addi sp,sp,-%d\n\
-    \    sd ra,%d(sp)\n\
-    \    sd s0,%d(sp)\n\
-    \    addi s0,sp,%d\n"
+    \    addi sp,sp,-STACK_OFFSET\n\
+    \    sd ra,RA_OFFSET(sp)\n\
+    \    sd s0,S0_OFFSET(sp)\n\
+    \    addi s0,sp,STACK_OFFSET\n"
     name
     name
     name
-    stack_offset
-    (stack_offset - 8)
-    (stack_offset - 16)
-    stack_offset;
-  current_stack_offset := stack_offset;
+  |> append;
   current_s0_offset := -24;
   let arg_list =
     Base.List.foldi arg_list ~init:[] ~f:(fun ind acc arg ->
-      printf "    sd a%d,%d(s0)\n" ind !current_s0_offset;
+      sprintf "    sd a%d,%d(s0)\n" ind !current_s0_offset |> append;
       let storage_location = string_of_int !current_s0_offset ^ "(s0)" |> offset in
       current_s0_offset := !current_s0_offset - 8;
       (arg, storage_location) :: acc)
@@ -129,20 +150,21 @@ let declare_function name arg_list local_variables_number =
 let build_call callee arg_list =
   Base.List.iteri arg_list ~f:(fun ind arg ->
     let dest = "a" ^ Int.to_string ind in
-    printf "%s\n" (get_load_instruction dest arg.value arg.typ));
-  printf "    call %s\n" callee.value;
+    sprintf "%s\n" (get_load_instruction dest arg.value arg.typ) |> append);
+  sprintf "    call %s\n" callee.value |> append;
   build_store (register "a0")
 ;;
 
 let build_compute_binop instruction left_operand right_operand =
   let left_operand = build_load left_operand in
   let right_operand = build_load right_operand in
-  printf
+  sprintf
     "    %s %s,%s,%s\n"
     instruction
     left_operand.value
     left_operand.value
-    right_operand.value;
+    right_operand.value
+  |> append;
   Stack.push left_operand.value free_registers;
   Stack.push right_operand.value free_registers;
   build_store left_operand
@@ -151,17 +173,18 @@ let build_compute_binop instruction left_operand right_operand =
 let build_compare_binop instruction left_operand right_operand =
   let left_operand = build_load left_operand in
   let right_operand = build_load right_operand in
-  printf
+  sprintf
     "    %s %s,%s,true_branch%d\n"
     instruction
     left_operand.value
     right_operand.value
-    !current_condition_number;
-  printf "    li %s,0\n" left_operand.value;
-  printf "    beq zero,zero,after_true_branch%d\n" !current_condition_number;
-  printf "    true_branch%d:\n" !current_condition_number;
-  printf "    li %s,1\n" left_operand.value;
-  printf "    after_true_branch%d:\n" !current_condition_number;
+    !current_condition_number
+  |> append;
+  sprintf "    li %s,0\n" left_operand.value |> append;
+  sprintf "    beq zero,zero,after_true_branch%d\n" !current_condition_number |> append;
+  sprintf "    true_branch%d:\n" !current_condition_number |> append;
+  sprintf "    li %s,1\n" left_operand.value |> append;
+  sprintf "    after_true_branch%d:\n" !current_condition_number |> append;
   current_condition_number := !current_condition_number + 1;
   Stack.push left_operand.value free_registers;
   Stack.push right_operand.value free_registers;
@@ -184,12 +207,16 @@ let build_gt left_operand right_operand = build_lt right_operand left_operand
 (** [build_ret v] creates a [ret] instruction. *)
 let build_ret value =
   if value.value <> "a0"
-  then printf "%s\n" (get_load_instruction "a0" value.value value.typ);
-  printf
+  then sprintf "%s\n" (get_load_instruction "a0" value.value value.typ) |> append;
+  let current_stack_offset = - !current_s0_offset in
+  sprintf
     "    ld ra,%d(sp)\n    ld s0,%d(sp)\n    addi sp,sp,%d\n    ret\n"
-    (!current_stack_offset - 8)
-    (!current_stack_offset - 16)
-    !current_stack_offset
+    (current_stack_offset - 8)
+    (current_stack_offset - 16)
+    current_stack_offset
+  |> append;
+  let generated = replace_offset current_stack_offset in
+  printf "%s" generated
 ;;
 
 (** [params f] return [Some n], where [n] is the number of arguments of function [f] if there is such function, and [None] otherwise. *)
@@ -201,13 +228,13 @@ let params f =
 
 let build_neg value =
   let value = build_load value in
-  printf "    neg %s,%s\n" value.value value.value;
+  sprintf "    neg %s,%s\n" value.value value.value |> append;
   build_store value
 ;;
 
 let build_not value =
   let value = build_load value in
-  printf "    xori %s,%s,-1\n" value.value value.value;
+  sprintf "    xori %s,%s,-1\n" value.value value.value |> append;
   build_store value
 ;;
 
@@ -216,15 +243,15 @@ let get_basicblock label =
   asprintf ".L%s%d" label !current_label_ind
 ;;
 
-let build_basicblock label = printf "%s:\n" label
+let build_basicblock label = sprintf "%s:\n" label |> append
 
 let build_beq value label =
   let zero = build_load (const_int 0) in
   let value = build_load value in
-  printf "    beq %s,%s,%s\n" value.value zero.value label
+  sprintf "    beq %s,%s,%s\n" value.value zero.value label |> append
 ;;
 
-let build_jump label = printf "    j %s\n" label
+let build_jump label = sprintf "    j %s\n" label |> append
 let common_register = ref None
 
 let build_label_ret value =
@@ -238,6 +265,6 @@ let build_label_ret value =
       common_register := None;
       reg
   in
-  printf "%s\n" @@ get_load_instruction reg value.value value.typ;
+  sprintf "%s\n" @@ get_load_instruction reg value.value value.typ |> append;
   reg |> register
 ;;

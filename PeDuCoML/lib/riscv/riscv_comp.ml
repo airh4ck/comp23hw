@@ -130,6 +130,7 @@ let rec codegen_cexpr args_number env = function
     let* tail, _ = codegen_immexpr args_number env tail in
     ok @@ build_call (lookup_function_exn "peducoml_add_to_list") [ tail; head ]
   | CIf (condition, true_branch, false_branch) ->
+    (* TODO: true and false branches don't reuse the same addresses in stack, leads to memory overhead *)
     let* condition, _ = codegen_immexpr args_number env condition in
     let false_label = get_basicblock "FB" in
     let joinup_label = get_basicblock "JB" in
@@ -153,27 +154,7 @@ and codegen_aexpr args_number env = function
 
 let codegen_global_scope_function args_numbers env (func : global_scope_function) =
   let function_name, arg_list, body = func in
-  let rec count_local_variables acc = function
-    (* TODO: не учитывает if-expressions *)
-    | ALet (_, body, nested_aexpr) ->
-      let acc = acc + 1 in
-      (* local var *)
-      let acc =
-        acc
-        +
-        match body with
-        | CApplication _ | CBinaryOperation _ | CUnaryOperation _ -> 1
-        | _ -> 0
-      in
-      count_local_variables (acc + 1) nested_aexpr
-    | _ -> acc
-  in
-  let func_rv_value, args =
-    declare_function
-      function_name
-      arg_list
-      (count_local_variables 0 body + Base.List.length arg_list)
-  in
+  let func_rv_value, args = declare_function function_name arg_list in
   let env =
     Base.List.fold_right args ~init:env ~f:(fun (arg, location) acc ->
       set acc ~key:arg ~data:location)
@@ -184,7 +165,6 @@ let codegen_global_scope_function args_numbers env (func : global_scope_function
 ;;
 
 let codegen program : (unit, riscv_error) Result.t =
-  (* Format.printf "    .option pic\n"; *)
   let args_number = gather_args_numbers program in
   let rec codegen env = function
     | [] -> ok ()

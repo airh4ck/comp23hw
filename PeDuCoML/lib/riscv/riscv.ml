@@ -83,7 +83,6 @@ let lookup_function name = Hashtbl.find_opt global_functions name >>= fun (f, _)
 let lookup_function_exn name = Hashtbl.find global_functions name |> fst
 
 let free_registers : string Stack.t = Stack.create ()
-let _ = Stack.push "t7" free_registers
 let _ = Stack.push "t6" free_registers
 let _ = Stack.push "t5" free_registers
 let _ = Stack.push "t4" free_registers
@@ -229,13 +228,17 @@ let params f =
 let build_neg value =
   let value = build_load value in
   sprintf "    neg %s,%s\n" value.value value.value |> append;
-  build_store value
+  let rez = build_store value in
+  Stack.push value.value free_registers;
+  rez
 ;;
 
 let build_not value =
   let value = build_load value in
   sprintf "    xori %s,%s,-1\n" value.value value.value |> append;
-  build_store value
+  let rez = build_store value in
+  Stack.push value.value free_registers;
+  rez
 ;;
 
 let get_basicblock label =
@@ -246,25 +249,22 @@ let get_basicblock label =
 let build_basicblock label = sprintf "%s:\n" label |> append
 
 let build_beq value label =
-  let zero = build_load (const_int 0) in
   let value = build_load value in
-  sprintf "    beq %s,%s,%s\n" value.value zero.value label |> append
+  sprintf "    beq %s,zero,%s\n" value.value label |> append;
+  Stack.push value.value free_registers
 ;;
 
 let build_jump label = sprintf "    j %s\n" label |> append
-let common_register = ref None
 
-let build_label_ret value =
-  let reg =
-    match !common_register with
-    | None ->
-      let reg = Stack.pop free_registers in
-      common_register := Some reg;
-      reg
-    | Some reg ->
-      common_register := None;
-      reg
-  in
-  sprintf "%s\n" @@ get_load_instruction reg value.value value.typ |> append;
-  reg |> register
+let build_alloca _ =
+  let stack_location = string_of_int !current_s0_offset ^ "(s0)" in
+  current_s0_offset := !current_s0_offset - 8;
+  offset stack_location
+;;
+
+let build_store_dst value dst =
+  let value = build_load value in
+  sprintf "    sd %s,%s\n" value.value dst.value |> append;
+  Stack.push value.value free_registers;
+  dst
 ;;

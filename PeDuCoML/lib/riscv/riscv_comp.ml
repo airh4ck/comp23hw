@@ -73,7 +73,7 @@ let rec codegen_immexpr args_number env =
          | Some n -> n
          | None -> 0
        in
-       ok (build_load value, number_of_args))
+       ok (value, number_of_args))
   | ImmString str ->
     let* lst =
       Base.String.to_list str |> Base.List.map ~f:(fun x -> ImmChar x) |> list_helper
@@ -132,17 +132,18 @@ let rec codegen_cexpr args_number env = function
   | CIf (condition, true_branch, false_branch) ->
     (* TODO: true and false branches don't reuse the same addresses in stack, leads to memory overhead *)
     let* condition, _ = codegen_immexpr args_number env condition in
+    let alloca = build_alloca () in
     let false_label = get_basicblock "FB" in
     let joinup_label = get_basicblock "JB" in
     build_beq condition false_label;
     let* true_branch = codegen_aexpr args_number env true_branch in
-    let _ = build_label_ret true_branch in
+    let _ = build_store_dst true_branch alloca in
     build_jump joinup_label;
     build_basicblock false_label;
     let* false_branch = codegen_aexpr args_number env false_branch in
-    let phi = build_label_ret false_branch in
+    let _ = build_store_dst false_branch alloca in
     build_basicblock joinup_label;
-    ok phi
+    ok alloca
 
 and codegen_aexpr args_number env = function
   | ACExpr cexpr -> codegen_cexpr args_number env cexpr

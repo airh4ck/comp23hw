@@ -63,7 +63,13 @@ let rec codegen_immexpr args_number env =
   | ImmInt num -> ok (const_int num, 0)
   | ImmChar c -> ok (Base.Char.to_int c |> const_int, 0)
   | ImmBool v -> ok (Base.Bool.to_int v |> const_int, 0)
-  | ImmId (GlobalScopeId id) -> ok (lookup_function_exn id, 0)
+  | ImmId (GlobalScopeId id) ->
+    let func = lookup_function_exn id in
+    let args = params func |> Option.get in
+    if args > 0
+    then ok (func, args)
+    else ok @@ (build_call (lookup_function_exn "peducoml_apply0") [ func ], args)
+    (* else ok (func, args) *)
   | ImmId (AnfId id) ->
     (match find env (AnfId id) with
      | None -> AnfId id |> unbound |> error
@@ -120,6 +126,14 @@ let rec codegen_cexpr args_number env = function
         [ callee; const_int number_of_args ]
     in
     let* arg, _ = codegen_immexpr args_number env arg in
+    let arg =
+      match params arg with
+      | None -> arg
+      | Some num_args ->
+        build_call
+          (lookup_function_exn "peducoml_alloc_closure")
+          [ arg; const_int num_args ]
+    in
     ok @@ build_call (lookup_function_exn "peducoml_apply") [ func_ptr; arg ]
   | CUnaryOperation (op, arg) ->
     let* arg, _ = codegen_immexpr args_number env arg in
@@ -161,6 +175,15 @@ let codegen_global_scope_function args_numbers env (func : global_scope_function
       set acc ~key:arg ~data:location)
   in
   let* body = codegen_aexpr (Base.Map.find_exn args_numbers function_name) env body in
+  let body =
+    match type_of body with
+    | Binding ->
+      let num_args = params body |> Option.get in
+      build_call
+        (lookup_function_exn "peducoml_alloc_closure")
+        [ body; const_int num_args ]
+    | _ -> body
+  in
   build_ret body;
   ok func_rv_value
 ;;

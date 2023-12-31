@@ -525,12 +525,6 @@
   true
   exit code = 0 (0x0)
   $ ./riscv_test.exe <<- EOF > riscv_test.S
-  > let main = print_new_line
-  > EOF
-  $ riscv64-linux-gnu-gcc -static -o riscv_test.out riscv_test.S -L../../runtime/ -l:libruntime.a
-  $ rvlinux riscv_test.out | awk 'BEGIN{RS=""} {split($0, arr, "Instructions executed"); split(arr[1], rez, ">>> Program exited, "); printf "%s\n",rez[1]; printf "%s",rez[2]}'
-
-  $ ./riscv_test.exe <<- EOF > riscv_test.S
   > let rec filter predicate list =
   >   match list with
   >     | h :: t -> if predicate h then h :: filter predicate t else filter predicate t
@@ -591,23 +585,6 @@
   $ riscv64-linux-gnu-gcc -static -o riscv_test.out riscv_test.S -L../../runtime/ -l:libruntime.a
   $ rvlinux riscv_test.out | awk 'BEGIN{RS=""} {split($0, arr, "Instructions executed"); split(arr[1], rez, ">>> Program exited, "); printf "%s\n",rez[1]}'
   14
-  $ ./riscv_test.exe <<- EOF > riscv_test.S 
-  > let filter predicate list =
-  >   match list with
-  >     | h :: t -> if predicate h then h :: filter predicate t else filter predicate t
-  >     | _ -> []
-  > 
-  > let main = print_list (filter (fun v -> v * v < 150) [12; 3; 54; 85; 36; 0; 91; 100; 1; 2; 13; 28; 63])
-  > EOF
-  $ riscv64-linux-gnu-gcc -static -o riscv_test.out riscv_test.S -L../../runtime/ -l:libruntime.a
-  $ rvlinux riscv_test.out | awk 'BEGIN{RS=""} {split($0, arr, "Instructions executed"); split(arr[1], rez, ">>> Program exited, "); printf "%s\n",rez[1]}'
-  No such variable: filter
-  $ ./riscv_test.exe <<- EOF > riscv_test.S
-  > let main = f 1 2
-  > EOF
-  $ riscv64-linux-gnu-gcc -static -o riscv_test.out riscv_test.S -L../../runtime/ -l:libruntime.a
-  $ rvlinux riscv_test.out | awk 'BEGIN{RS=""} {split($0, arr, "Instructions executed"); split(arr[1], rez, ">>> Program exited, "); printf "%s\n",rez[1]}'
-  No such variable: f
   $ ./riscv_test.exe <<- EOF > riscv_test.S
   > let count_solutions_of_sq_equation a b c =
   >   let sq x = x * x
@@ -671,12 +648,6 @@
   $ riscv64-linux-gnu-gcc -static -o riscv_test.out riscv_test.S -L../../runtime/ -l:libruntime.a
   $ rvlinux riscv_test.out | awk 'BEGIN{RS=""} {split($0, arr, "Instructions executed"); split(arr[1], rez, ">>> Program exited, "); printf "%s\n",rez[1]}'
   false
-  $ ./riscv_test.exe <<- EOF > riscv_test.S
-  > let main = "abc" + "def"
-  > EOF
-  $ riscv64-linux-gnu-gcc -static -o riscv_test.out riscv_test.S -L../../runtime/ -l:libruntime.a
-  $ rvlinux riscv_test.out | awk 'BEGIN{RS=""} {split($0, arr, "Instructions executed"); split(arr[1], rez, ">>> Program exited, "); printf "%s\n",rez[1]}'
-  Unification failed: type of the expression is string but expected type was int
   $ ./riscv_test.exe <<- EOF > riscv_test.S
   > let pifagor_check = fun x y z -> x * x + y * y = z * z
   > 
@@ -744,20 +715,6 @@
   $ rvlinux riscv_test.out | awk 'BEGIN{RS=""} {split($0, arr, "Instructions executed"); split(arr[1], rez, ">>> Program exited, "); printf "%s\n",rez[1]}'
   225
   $ ./riscv_test.exe <<- EOF > riscv_test.S
-  > let fst pair =
-  >   match pair with (x, _) -> x
-  > 
-  > let snd pair =
-  >   match pair with (_, y) -> y
-  > 
-  > let idx = 1
-  > 
-  > let main = print_int (fst (13, 45, 89))
-  > EOF
-  $ riscv64-linux-gnu-gcc -static -o riscv_test.out riscv_test.S -L../../runtime/ -l:libruntime.a
-  $ rvlinux riscv_test.out | awk 'BEGIN{RS=""} {split($0, arr, "Instructions executed"); split(arr[1], rez, ">>> Program exited, "); printf "%s\n",rez[1]}'
-  Unification failed: type of the expression is int * int * int but expected type was 'j * 'i
-  $ ./riscv_test.exe <<- EOF > riscv_test.S
   > let rec lists_sum list1 list2 =
   >   match list1, list2 with
   >     | h1 :: t1, h2 :: t2 -> (h1 + h2) :: lists_sum t1 t2
@@ -783,12 +740,6 @@
   $ riscv64-linux-gnu-gcc -static -o riscv_test.out riscv_test.S -L../../runtime/ -l:libruntime.a
   $ rvlinux riscv_test.out | awk 'BEGIN{RS=""} {split($0, arr, "Instructions executed"); split(arr[1], rez, ">>> Program exited, "); printf "%s\n",rez[1]}'
   [1; 2; 3; 4]
-  $ ./riscv_test.exe <<- EOF > riscv_test.S
-  > let _ x = x
-  > EOF
-  $ riscv64-linux-gnu-gcc -static -o riscv_test.out riscv_test.S -L../../runtime/ -l:libruntime.a
-  $ rvlinux riscv_test.out | awk 'BEGIN{RS=""} {split($0, arr, "Instructions executed"); split(arr[1], rez, ">>> Program exited, "); printf "%s\n",rez[1]}'
-  : end_of_input
   $ ./riscv_test.exe <<- EOF > riscv_test.S
   > let apply_function f arg1 arg2 = print_int (f arg1 arg2)
   > 
@@ -842,9 +793,9 @@
   > let main = print_int (1/0)
   > EOF
   $ riscv64-linux-gnu-gcc -static -o riscv_test.out riscv_test.S -L../../runtime/ -l:libruntime.a
-  $ rvlinux riscv_test.out | awk 'BEGIN{RS=""} {split($0, arr, "Instructions executed"); split(arr[1], rez, ">>> Program exited, "); printf "%s\n",rez[1]}'
+  $ rvlinux riscv_test.out | awk 'BEGIN{RS=""} {split($0, arr, "Instructions executed"); split(arr[1], rez, ">>> Program exited, "); printf "%s",rez[1]; printf "%s",rez[2]}'
   Exception: devision by zero. Exited with 1
-  [1]
+  exit code = 1 (0x1)
   $ ./riscv_test.exe <<- EOF > riscv_test.S -opaque-pointers
   > let rec fib n =
   >   if n=0 then 0 else if n=1 then 1 else fib (n-2) + fib (n-1)

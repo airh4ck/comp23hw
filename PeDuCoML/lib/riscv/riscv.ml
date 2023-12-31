@@ -268,3 +268,5 @@ let build_store_dst value dst =
   Stack.push value.value free_registers;
   dst
 ;;
+
+let type_of value = value.typ

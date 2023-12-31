@@ -90,7 +90,6 @@ let _ = Stack.push "t3" free_registers
 let _ = Stack.push "t2" free_registers
 let _ = Stack.push "t1" free_registers
 let _ = Stack.push "t0" free_registers
-let current_stack_offset = ref 0
 let current_s0_offset = ref 0
 let current_condition_number = ref 0
 let current_label_ind = ref 0

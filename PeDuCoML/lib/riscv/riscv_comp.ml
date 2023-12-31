@@ -25,11 +25,6 @@ let ( let* ) = bind
 
 open Environment
 
-let string_of_unique_id = function
-  | AnfId id -> string_of_int id
-  | GlobalScopeId id -> id
-;;
-
 let build_binary_operation = function
   | Add -> build_add
   | Sub -> build_sub

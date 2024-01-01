@@ -10,7 +10,6 @@ bug-reports: "https://github.com/airh4ck/comp23hw/issues"
 depends: [
   "ocaml"
   "dune" {>= "3.4"}
-  "gcc-riscv64-linux-gnu"
   "ppx_expect"
   "ppx_deriving"
   "angstrom"

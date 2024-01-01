@@ -14,8 +14,8 @@
       addi sp,sp,24
       ret
   $ riscv64-linux-gnu-gcc -static riscv_test.S -o riscv_test.out
-  $ rvlinux riscv_test.out | awk 'BEGIN{RS=""} {split($0, arr, "Instructions executed"); split(arr[1], rez, ">>> Program exited, "); if (length(rez[1]) > 0) { printf "%s\n",rez[1] }; printf "%s",rez[2]}'
-  exit code = 2 (0x2)
+  $ qemu-riscv64-static riscv_test.out
+  [2]
   $ ./riscv_test.exe <<- EOF | tee riscv_test.S
   > let main = print_int 2
   > EOF
@@ -41,73 +41,63 @@
       addi sp,sp,40
       ret
   $ riscv64-linux-gnu-gcc -static -o riscv_test.out riscv_test.S -L../../runtime/ -l:libruntime.a
-  $ rvlinux riscv_test.out | awk 'BEGIN{RS=""} {split($0, arr, "Instructions executed"); split(arr[1], rez, ">>> Program exited, "); printf "%s\n",rez[1]; printf "%s",rez[2]}'
+  $ qemu-riscv64-static riscv_test.out 
   2
-  exit code = 0 (0x0)
   $ ./riscv_test.exe <<- EOF > riscv_test.S
   > let ignore x = 42
   > let main = print_int (ignore 0)
   > EOF
   $ riscv64-linux-gnu-gcc -static -o riscv_test.out riscv_test.S -L../../runtime/ -l:libruntime.a
-  $ rvlinux riscv_test.out | awk 'BEGIN{RS=""} {split($0, arr, "Instructions executed"); split(arr[1], rez, ">>> Program exited, "); printf "%s\n",rez[1]; printf "%s",rez[2]}'
+  $ qemu-riscv64-static riscv_test.out 
   42
-  exit code = 0 (0x0)
   $ ./riscv_test.exe <<- EOF > riscv_test.S
   > let main = print_char 'c'
   > EOF
   $ riscv64-linux-gnu-gcc -static -o riscv_test.out riscv_test.S -L../../runtime/ -l:libruntime.a
-  $ rvlinux riscv_test.out | awk 'BEGIN{RS=""} {split($0, arr, "Instructions executed"); split(arr[1], rez, ">>> Program exited, "); printf "%s\n",rez[1]; printf "%s",rez[2]}'
+  $ qemu-riscv64-static riscv_test.out 
   c
-  exit code = 0 (0x0)
   $ ./riscv_test.exe <<- EOF > riscv_test.S
   > let main = print_int (13 + 52)
   > EOF
   $ riscv64-linux-gnu-gcc -static -o riscv_test.out riscv_test.S -L../../runtime/ -l:libruntime.a
-  $ rvlinux riscv_test.out | awk 'BEGIN{RS=""} {split($0, arr, "Instructions executed"); split(arr[1], rez, ">>> Program exited, "); printf "%s\n",rez[1]; printf "%s",rez[2]}'
+  $ qemu-riscv64-static riscv_test.out 
   65
-  exit code = 0 (0x0)
   $ ./riscv_test.exe <<- EOF > riscv_test.S
   > let main = print_int (132 - 42)
   > EOF
   $ riscv64-linux-gnu-gcc -static -o riscv_test.out riscv_test.S -L../../runtime/ -l:libruntime.a
-  $ rvlinux riscv_test.out | awk 'BEGIN{RS=""} {split($0, arr, "Instructions executed"); split(arr[1], rez, ">>> Program exited, "); printf "%s\n",rez[1]; printf "%s",rez[2]}'
+  $ qemu-riscv64-static riscv_test.out 
   90
-  exit code = 0 (0x0)
   $ ./riscv_test.exe <<- EOF > riscv_test.S
   > let main = print_int (51 - 100)
   > EOF
   $ riscv64-linux-gnu-gcc -static -o riscv_test.out riscv_test.S -L../../runtime/ -l:libruntime.a
-  $ rvlinux riscv_test.out | awk 'BEGIN{RS=""} {split($0, arr, "Instructions executed"); split(arr[1], rez, ">>> Program exited, "); printf "%s\n",rez[1]; printf "%s",rez[2]}'
+  $ qemu-riscv64-static riscv_test.out 
   -49
-  exit code = 0 (0x0)
   $ ./riscv_test.exe <<- EOF > riscv_test.S
   > let main = print_int (13 * 11)
   > EOF
   $ riscv64-linux-gnu-gcc -static -o riscv_test.out riscv_test.S -L../../runtime/ -l:libruntime.a
-  $ rvlinux riscv_test.out | awk 'BEGIN{RS=""} {split($0, arr, "Instructions executed"); split(arr[1], rez, ">>> Program exited, "); printf "%s\n",rez[1]; printf "%s",rez[2]}'
+  $ qemu-riscv64-static riscv_test.out 
   143
-  exit code = 0 (0x0)
   $ ./riscv_test.exe <<- EOF > riscv_test.S
   > let main = print_int (13 * 11)
   > EOF
   $ riscv64-linux-gnu-gcc -static -o riscv_test.out riscv_test.S -L../../runtime/ -l:libruntime.a
-  $ rvlinux riscv_test.out | awk 'BEGIN{RS=""} {split($0, arr, "Instructions executed"); split(arr[1], rez, ">>> Program exited, "); printf "%s\n",rez[1]; printf "%s",rez[2]}'
+  $ qemu-riscv64-static riscv_test.out 
   143
-  exit code = 0 (0x0)
   $ ./riscv_test.exe <<- EOF > riscv_test.S
   > let main = print_int (36 / 18)
   > EOF
   $ riscv64-linux-gnu-gcc -static -o riscv_test.out riscv_test.S -L../../runtime/ -l:libruntime.a
-  $ rvlinux riscv_test.out | awk 'BEGIN{RS=""} {split($0, arr, "Instructions executed"); split(arr[1], rez, ">>> Program exited, "); printf "%s\n",rez[1]; printf "%s",rez[2]}'
+  $ qemu-riscv64-static riscv_test.out 
   2
-  exit code = 0 (0x0)
   $ ./riscv_test.exe <<- EOF > riscv_test.S
   > let main = print_int (((13 + 52 - 7) * 3 - 6) / 4)
   > EOF
   $ riscv64-linux-gnu-gcc -static -o riscv_test.out riscv_test.S -L../../runtime/ -l:libruntime.a
-  $ rvlinux riscv_test.out | awk 'BEGIN{RS=""} {split($0, arr, "Instructions executed"); split(arr[1], rez, ">>> Program exited, "); printf "%s\n",rez[1]; printf "%s",rez[2]}'
+  $ qemu-riscv64-static riscv_test.out 
   42
-  exit code = 0 (0x0)
   $ ./riscv_test.exe <<- EOF > riscv_test.S
   > let main =
   >   let x = 1 in
@@ -115,9 +105,8 @@
   >   print_bool (x = y)
   > EOF
   $ riscv64-linux-gnu-gcc -static -o riscv_test.out riscv_test.S -L../../runtime/ -l:libruntime.a
-  $ rvlinux riscv_test.out | awk 'BEGIN{RS=""} {split($0, arr, "Instructions executed"); split(arr[1], rez, ">>> Program exited, "); printf "%s\n",rez[1]; printf "%s",rez[2]}'
+  $ qemu-riscv64-static riscv_test.out 
   true
-  exit code = 0 (0x0)
   $ ./riscv_test.exe <<- EOF > riscv_test.S
   > let main =
   >   let x = 1 in
@@ -125,9 +114,8 @@
   >   print_bool (x = y)
   > EOF
   $ riscv64-linux-gnu-gcc -static -o riscv_test.out riscv_test.S -L../../runtime/ -l:libruntime.a
-  $ rvlinux riscv_test.out | awk 'BEGIN{RS=""} {split($0, arr, "Instructions executed"); split(arr[1], rez, ">>> Program exited, "); printf "%s\n",rez[1]; printf "%s",rez[2]}'
+  $ qemu-riscv64-static riscv_test.out 
   false
-  exit code = 0 (0x0)
   $ ./riscv_test.exe <<- EOF > riscv_test.S
   > let main = 
   >   let x = 1 in
@@ -135,9 +123,8 @@
   >   print_bool (x <> y)
   > EOF
   $ riscv64-linux-gnu-gcc -static -o riscv_test.out riscv_test.S -L../../runtime/ -l:libruntime.a
-  $ rvlinux riscv_test.out | awk 'BEGIN{RS=""} {split($0, arr, "Instructions executed"); split(arr[1], rez, ">>> Program exited, "); printf "%s\n",rez[1]; printf "%s",rez[2]}'
+  $ qemu-riscv64-static riscv_test.out 
   false
-  exit code = 0 (0x0)
   $ ./riscv_test.exe <<- EOF > riscv_test.S
   > let main = 
   >   let x = 1 in
@@ -145,9 +132,8 @@
   >   print_bool (x < y)
   > EOF
   $ riscv64-linux-gnu-gcc -static -o riscv_test.out riscv_test.S -L../../runtime/ -l:libruntime.a
-  $ rvlinux riscv_test.out | awk 'BEGIN{RS=""} {split($0, arr, "Instructions executed"); split(arr[1], rez, ">>> Program exited, "); printf "%s\n",rez[1]; printf "%s",rez[2]}'
+  $ qemu-riscv64-static riscv_test.out 
   true
-  exit code = 0 (0x0)
   $ ./riscv_test.exe <<- EOF > riscv_test.S
   > let main = 
   >   let x = 42 in
@@ -155,9 +141,8 @@
   >   print_bool (x <= y)
   > EOF
   $ riscv64-linux-gnu-gcc -static -o riscv_test.out riscv_test.S -L../../runtime/ -l:libruntime.a
-  $ rvlinux riscv_test.out | awk 'BEGIN{RS=""} {split($0, arr, "Instructions executed"); split(arr[1], rez, ">>> Program exited, "); printf "%s\n",rez[1]; printf "%s",rez[2]}'
+  $ qemu-riscv64-static riscv_test.out 
   false
-  exit code = 0 (0x0)
   $ ./riscv_test.exe <<- EOF > riscv_test.S
   > let main = 
   >   let x = 1 in
@@ -165,9 +150,8 @@
   >   print_bool (x > y)
   > EOF
   $ riscv64-linux-gnu-gcc -static -o riscv_test.out riscv_test.S -L../../runtime/ -l:libruntime.a
-  $ rvlinux riscv_test.out | awk 'BEGIN{RS=""} {split($0, arr, "Instructions executed"); split(arr[1], rez, ">>> Program exited, "); printf "%s\n",rez[1]; printf "%s",rez[2]}'
+  $ qemu-riscv64-static riscv_test.out 
   false
-  exit code = 0 (0x0)
   $ ./riscv_test.exe <<- EOF > riscv_test.S
   > let main = 
   >   let x = 42 in
@@ -175,9 +159,8 @@
   >   print_bool (x >= y)
   > EOF
   $ riscv64-linux-gnu-gcc -static -o riscv_test.out riscv_test.S -L../../runtime/ -l:libruntime.a
-  $ rvlinux riscv_test.out | awk 'BEGIN{RS=""} {split($0, arr, "Instructions executed"); split(arr[1], rez, ">>> Program exited, "); printf "%s\n",rez[1]; printf "%s",rez[2]}'
+  $ qemu-riscv64-static riscv_test.out 
   true
-  exit code = 0 (0x0)
   $ ./riscv_test.exe <<- EOF > riscv_test.S
   > let main = 
   >   let x = true in
@@ -185,9 +168,8 @@
   >   print_bool (x && y)
   > EOF
   $ riscv64-linux-gnu-gcc -static -o riscv_test.out riscv_test.S -L../../runtime/ -l:libruntime.a
-  $ rvlinux riscv_test.out | awk 'BEGIN{RS=""} {split($0, arr, "Instructions executed"); split(arr[1], rez, ">>> Program exited, "); printf "%s\n",rez[1]; printf "%s",rez[2]}'
+  $ qemu-riscv64-static riscv_test.out 
   false
-  exit code = 0 (0x0)
   $ ./riscv_test.exe <<- EOF > riscv_test.S
   > let main = 
   >   let x = true in
@@ -195,170 +177,148 @@
   >   print_bool (x || y)
   > EOF
   $ riscv64-linux-gnu-gcc -static -o riscv_test.out riscv_test.S -L../../runtime/ -l:libruntime.a
-  $ rvlinux riscv_test.out | awk 'BEGIN{RS=""} {split($0, arr, "Instructions executed"); split(arr[1], rez, ">>> Program exited, "); printf "%s\n",rez[1]; printf "%s",rez[2]}'
+  $ qemu-riscv64-static riscv_test.out 
   true
-  exit code = 0 (0x0)
   $ ./riscv_test.exe <<- EOF > riscv_test.S
   > let main = print_list [1; 2; 3; 4; 5]
   > EOF
   $ riscv64-linux-gnu-gcc -static -o riscv_test.out riscv_test.S -L../../runtime/ -l:libruntime.a
-  $ rvlinux riscv_test.out | awk 'BEGIN{RS=""} {split($0, arr, "Instructions executed"); split(arr[1], rez, ">>> Program exited, "); printf "%s\n",rez[1]; printf "%s",rez[2]}'
+  $ qemu-riscv64-static riscv_test.out 
   [1; 2; 3; 4; 5]
-  exit code = 0 (0x0)
   $ ./riscv_test.exe <<- EOF > riscv_test.S
   > let main = print_tuple (10, 5, false, true)
   > EOF
   $ riscv64-linux-gnu-gcc -static -o riscv_test.out riscv_test.S -L../../runtime/ -l:libruntime.a
-  $ rvlinux riscv_test.out | awk 'BEGIN{RS=""} {split($0, arr, "Instructions executed"); split(arr[1], rez, ">>> Program exited, "); printf "%s\n",rez[1]; printf "%s",rez[2]}'
+  $ qemu-riscv64-static riscv_test.out 
   (10, 5, 0, 1)
-  exit code = 0 (0x0)
   $ ./riscv_test.exe <<- EOF > riscv_test.S
   > let add x y = x + y
   > let main = print_int (add 1 2)
   > EOF
   $ riscv64-linux-gnu-gcc -static -o riscv_test.out riscv_test.S -L../../runtime/ -l:libruntime.a
-  $ rvlinux riscv_test.out | awk 'BEGIN{RS=""} {split($0, arr, "Instructions executed"); split(arr[1], rez, ">>> Program exited, "); printf "%s\n",rez[1]; printf "%s",rez[2]}'
+  $ qemu-riscv64-static riscv_test.out 
   3
-  exit code = 0 (0x0)
   $ ./riscv_test.exe <<- EOF > riscv_test.S
   > let add_and_mul x y z = (x + y) * z
   > let main = print_int (add_and_mul 1 3 5)
   > EOF
   $ riscv64-linux-gnu-gcc -static -o riscv_test.out riscv_test.S -L../../runtime/ -l:libruntime.a
-  $ rvlinux riscv_test.out | awk 'BEGIN{RS=""} {split($0, arr, "Instructions executed"); split(arr[1], rez, ">>> Program exited, "); printf "%s\n",rez[1]; printf "%s",rez[2]}'
+  $ qemu-riscv64-static riscv_test.out 
   20
-  exit code = 0 (0x0)
   $ ./riscv_test.exe <<- EOF > riscv_test.S
   > let add x y = x + y
   > let partial_add x = add x
   > let main = print_int (partial_add 1 2)
   > EOF
   $ riscv64-linux-gnu-gcc -static -o riscv_test.out riscv_test.S -L../../runtime/ -l:libruntime.a
-  $ rvlinux riscv_test.out | awk 'BEGIN{RS=""} {split($0, arr, "Instructions executed"); split(arr[1], rez, ">>> Program exited, "); printf "%s\n",rez[1]; printf "%s",rez[2]}'
+  $ qemu-riscv64-static riscv_test.out 
   3
-  exit code = 0 (0x0)
   $ ./riscv_test.exe <<- EOF > riscv_test.S
   > let main = print_string "wow, this marvel of thought works!"
   > EOF
   $ riscv64-linux-gnu-gcc -static -o riscv_test.out riscv_test.S -L../../runtime/ -l:libruntime.a
-  $ rvlinux riscv_test.out | awk 'BEGIN{RS=""} {split($0, arr, "Instructions executed"); split(arr[1], rez, ">>> Program exited, "); printf "%s\n",rez[1]; printf "%s",rez[2]}'
+  $ qemu-riscv64-static riscv_test.out 
   wow, this marvel of thought works!
-  exit code = 0 (0x0)
   $ ./riscv_test.exe <<- EOF > riscv_test.S
   > let main = print_int (-2)
   > EOF
   $ riscv64-linux-gnu-gcc -static -o riscv_test.out riscv_test.S -L../../runtime/ -l:libruntime.a
-  $ rvlinux riscv_test.out | awk 'BEGIN{RS=""} {split($0, arr, "Instructions executed"); split(arr[1], rez, ">>> Program exited, "); printf "%s\n",rez[1]; printf "%s",rez[2]}'
+  $ qemu-riscv64-static riscv_test.out 
   -2
-  exit code = 0 (0x0)
   $ ./riscv_test.exe <<- EOF > riscv_test.S
   > let main = 
   >   let add x y = x + y in
   >   print_int (-(add 20 22))
   > EOF
   $ riscv64-linux-gnu-gcc -static -o riscv_test.out riscv_test.S -L../../runtime/ -l:libruntime.a
-  $ rvlinux riscv_test.out | awk 'BEGIN{RS=""} {split($0, arr, "Instructions executed"); split(arr[1], rez, ">>> Program exited, "); printf "%s\n",rez[1]; printf "%s",rez[2]}'
+  $ qemu-riscv64-static riscv_test.out 
   -42
-  exit code = 0 (0x0)
   $ ./riscv_test.exe <<- EOF > riscv_test.S
   > let main = print_bool (not true)
   > EOF
   $ riscv64-linux-gnu-gcc -static -o riscv_test.out riscv_test.S -L../../runtime/ -l:libruntime.a
-  $ rvlinux riscv_test.out | awk 'BEGIN{RS=""} {split($0, arr, "Instructions executed"); split(arr[1], rez, ">>> Program exited, "); printf "%s\n",rez[1]; printf "%s",rez[2]}'
+  $ qemu-riscv64-static riscv_test.out 
   false
-  exit code = 0 (0x0)
   $ ./riscv_test.exe <<- EOF > riscv_test.S
   > let main =
   >   if true then print_int 1 else print_int 0
   > EOF
   $ riscv64-linux-gnu-gcc -static -o riscv_test.out riscv_test.S -L../../runtime/ -l:libruntime.a
-  $ rvlinux riscv_test.out | awk 'BEGIN{RS=""} {split($0, arr, "Instructions executed"); split(arr[1], rez, ">>> Program exited, "); printf "%s\n",rez[1]; printf "%s",rez[2]}'
+  $ qemu-riscv64-static riscv_test.out 
   1
-  exit code = 0 (0x0)
   $ ./riscv_test.exe <<- EOF > riscv_test.S
   > let main = 
   >   let rez = compare_strings_eq "abcdef" "abcdef" in
   >   print_bool rez
   > EOF
   $ riscv64-linux-gnu-gcc -static -o riscv_test.out riscv_test.S -L../../runtime/ -l:libruntime.a
-  $ rvlinux riscv_test.out | awk 'BEGIN{RS=""} {split($0, arr, "Instructions executed"); split(arr[1], rez, ">>> Program exited, "); printf "%s\n",rez[1]; printf "%s",rez[2]}'
+  $ qemu-riscv64-static riscv_test.out 
   true
-  exit code = 0 (0x0)
   $ ./riscv_test.exe <<- EOF > riscv_test.S
   > let main = print_bool (compare_strings_gt "akf" "bhrefhwfoiwefohefowhb23r384723")
   > EOF
   $ riscv64-linux-gnu-gcc -static -o riscv_test.out riscv_test.S -L../../runtime/ -l:libruntime.a
-  $ rvlinux riscv_test.out | awk 'BEGIN{RS=""} {split($0, arr, "Instructions executed"); split(arr[1], rez, ">>> Program exited, "); printf "%s\n",rez[1]; printf "%s",rez[2]}'
+  $ qemu-riscv64-static riscv_test.out 
   false
-  exit code = 0 (0x0)
   $ ./riscv_test.exe <<- EOF > riscv_test.S
   > let main = print_bool (compare_strings_neq "" "")
   > EOF
   $ riscv64-linux-gnu-gcc -static -o riscv_test.out riscv_test.S -L../../runtime/ -l:libruntime.a
-  $ rvlinux riscv_test.out | awk 'BEGIN{RS=""} {split($0, arr, "Instructions executed"); split(arr[1], rez, ">>> Program exited, "); printf "%s\n",rez[1]; printf "%s",rez[2]}'
+  $ qemu-riscv64-static riscv_test.out 
   false
-  exit code = 0 (0x0)
   $ ./riscv_test.exe <<- EOF > riscv_test.S
   > let main = print_bool (compare_strings_lt "iiub" "iiua")
   > EOF
   $ riscv64-linux-gnu-gcc -static -o riscv_test.out riscv_test.S -L../../runtime/ -l:libruntime.a
-  $ rvlinux riscv_test.out | awk 'BEGIN{RS=""} {split($0, arr, "Instructions executed"); split(arr[1], rez, ">>> Program exited, "); printf "%s\n",rez[1]; printf "%s",rez[2]}'
+  $ qemu-riscv64-static riscv_test.out 
   false
-  exit code = 0 (0x0)
   $ ./riscv_test.exe <<- EOF > riscv_test.S
   > let main = print_bool (compare_strings_lte "iiua" "iiua")
   > EOF
   $ riscv64-linux-gnu-gcc -static -o riscv_test.out riscv_test.S -L../../runtime/ -l:libruntime.a
-  $ rvlinux riscv_test.out | awk 'BEGIN{RS=""} {split($0, arr, "Instructions executed"); split(arr[1], rez, ">>> Program exited, "); printf "%s\n",rez[1]; printf "%s",rez[2]}'
+  $ qemu-riscv64-static riscv_test.out 
   true
-  exit code = 0 (0x0)
   $ ./riscv_test.exe <<- EOF > riscv_test.S
   > let main = print_bool (compare_strings_gte "fe" "aujw9")
   > EOF
   $ riscv64-linux-gnu-gcc -static -o riscv_test.out riscv_test.S -L../../runtime/ -l:libruntime.a
-  $ rvlinux riscv_test.out | awk 'BEGIN{RS=""} {split($0, arr, "Instructions executed"); split(arr[1], rez, ">>> Program exited, "); printf "%s\n",rez[1]; printf "%s",rez[2]}'
+  $ qemu-riscv64-static riscv_test.out 
   true
-  exit code = 0 (0x0)
   $ ./riscv_test.exe <<- EOF > riscv_test.S
   > let rec factorial n = if n <= 1 then 1 else n * factorial (n - 1)
   > let main = print_int (factorial 6)
   > EOF
   $ riscv64-linux-gnu-gcc -static -o riscv_test.out riscv_test.S -L../../runtime/ -l:libruntime.a
-  $ rvlinux riscv_test.out | awk 'BEGIN{RS=""} {split($0, arr, "Instructions executed"); split(arr[1], rez, ">>> Program exited, "); printf "%s\n",rez[1]; printf "%s",rez[2]}'
+  $ qemu-riscv64-static riscv_test.out 
   720
-  exit code = 0 (0x0)
   $ ./riscv_test.exe <<- EOF > riscv_test.S
   > let rec factorial n = if n <= 1 then 1 else n * factorial (n - 1)
   > let main = print_int (factorial 5)
   > EOF
   $ riscv64-linux-gnu-gcc -static -o riscv_test.out riscv_test.S -L../../runtime/ -l:libruntime.a
-  $ rvlinux riscv_test.out | awk 'BEGIN{RS=""} {split($0, arr, "Instructions executed"); split(arr[1], rez, ">>> Program exited, "); printf "%s\n",rez[1]; printf "%s",rez[2]}'
+  $ qemu-riscv64-static riscv_test.out 
   120
-  exit code = 0 (0x0)
   $ ./riscv_test.exe <<- EOF > riscv_test.S
   > let rec factorial n = if n <= 1 then 1 else n * factorial (n - 1)
   > let main = print_int (factorial 1)
   > EOF
   $ riscv64-linux-gnu-gcc -static -o riscv_test.out riscv_test.S -L../../runtime/ -l:libruntime.a
-  $ rvlinux riscv_test.out | awk 'BEGIN{RS=""} {split($0, arr, "Instructions executed"); split(arr[1], rez, ">>> Program exited, "); printf "%s\n",rez[1]; printf "%s",rez[2]}'
+  $ qemu-riscv64-static riscv_test.out 
   1
-  exit code = 0 (0x0)
   $ ./riscv_test.exe <<- EOF > riscv_test.S
   > let is_greater_than_5 x = if x > 5 then true else false
   > let main = print_bool (is_greater_than_5 6)
   > EOF
   $ riscv64-linux-gnu-gcc -static -o riscv_test.out riscv_test.S -L../../runtime/ -l:libruntime.a
-  $ rvlinux riscv_test.out | awk 'BEGIN{RS=""} {split($0, arr, "Instructions executed"); split(arr[1], rez, ">>> Program exited, "); printf "%s\n",rez[1]; printf "%s",rez[2]}'
+  $ qemu-riscv64-static riscv_test.out 
   true
-  exit code = 0 (0x0)
   $ ./riscv_test.exe <<- EOF > riscv_test.S
   > let is_greater_than_5 x = if x > 5 then true else false
   > let main = print_bool (is_greater_than_5 2)
   > EOF
   $ riscv64-linux-gnu-gcc -static -o riscv_test.out riscv_test.S -L../../runtime/ -l:libruntime.a
-  $ rvlinux riscv_test.out | awk 'BEGIN{RS=""} {split($0, arr, "Instructions executed"); split(arr[1], rez, ">>> Program exited, "); printf "%s\n",rez[1]; printf "%s",rez[2]}'
+  $ qemu-riscv64-static riscv_test.out 
   false
-  exit code = 0 (0x0)
   $ ./riscv_test.exe <<- EOF > riscv_test.S
   > let rec filter predicate list =
   >   match list with
@@ -368,9 +328,8 @@
   > let main = print_list (filter (fun v -> v * v < 150) [12; 3; 54; 85; 36; 0; 91; 100; 1; 2; 13; 28; 63])
   > EOF
   $ riscv64-linux-gnu-gcc -static -o riscv_test.out riscv_test.S -L../../runtime/ -l:libruntime.a
-  $ rvlinux riscv_test.out | awk 'BEGIN{RS=""} {split($0, arr, "Instructions executed"); split(arr[1], rez, ">>> Program exited, "); printf "%s\n",rez[1]; printf "%s",rez[2]}'
+  $ qemu-riscv64-static riscv_test.out 
   [12; 3; 0; 1; 2]
-  exit code = 0 (0x0)
   $ ./riscv_test.exe <<- EOF > riscv_test.S
   > let rec add_1_to_list list = 
   >   match list with
@@ -380,150 +339,131 @@
   > let main = print_list (add_1_to_list [1; 2; 3; 4; 5])
   > EOF
   $ riscv64-linux-gnu-gcc -static -o riscv_test.out riscv_test.S -L../../runtime/ -l:libruntime.a
-  $ rvlinux riscv_test.out | awk 'BEGIN{RS=""} {split($0, arr, "Instructions executed"); split(arr[1], rez, ">>> Program exited, "); printf "%s\n",rez[1]; printf "%s",rez[2]}'
+  $ qemu-riscv64-static riscv_test.out 
   [2; 3; 4; 5; 6]
-  exit code = 0 (0x0)
   $ ./riscv_test.exe <<- EOF > riscv_test.S
   > let main = print_list ((5 + 4) :: 3 :: [1; 6; 0])
   > EOF
   $ riscv64-linux-gnu-gcc -static -o riscv_test.out riscv_test.S -L../../runtime/ -l:libruntime.a
-  $ rvlinux riscv_test.out | awk 'BEGIN{RS=""} {split($0, arr, "Instructions executed"); split(arr[1], rez, ">>> Program exited, "); printf "%s\n",rez[1]; printf "%s",rez[2]}'
+  $ qemu-riscv64-static riscv_test.out 
   [9; 3; 1; 6; 0]
-  exit code = 0 (0x0)
   $ ./riscv_test.exe <<- EOF > riscv_test.S
   > let main = print_list []
   > EOF
   $ riscv64-linux-gnu-gcc -static -o riscv_test.out riscv_test.S -L../../runtime/ -l:libruntime.a
-  $ rvlinux riscv_test.out | awk 'BEGIN{RS=""} {split($0, arr, "Instructions executed"); split(arr[1], rez, ">>> Program exited, "); printf "%s\n",rez[1]; printf "%s",rez[2]}'
+  $ qemu-riscv64-static riscv_test.out 
   []
-  exit code = 0 (0x0)
   $ ./riscv_test.exe <<- EOF > riscv_test.S
   > let list1 = [1; 2; 3]
   > let list2 = [2]
   > let main = print_bool (compare_lists_lt list1 list2)
   > EOF
   $ riscv64-linux-gnu-gcc -static -o riscv_test.out riscv_test.S -L../../runtime/ -l:libruntime.a
-  $ rvlinux riscv_test.out | awk 'BEGIN{RS=""} {split($0, arr, "Instructions executed"); split(arr[1], rez, ">>> Program exited, "); printf "%s\n",rez[1]; printf "%s",rez[2]}'
+  $ qemu-riscv64-static riscv_test.out 
   true
-  exit code = 0 (0x0)
   $ ./riscv_test.exe <<- EOF > riscv_test.S
   > let main = print_bool (compare_lists_eq [1; 2; 3] [1; 2; 3])
   > EOF
   $ riscv64-linux-gnu-gcc -static -o riscv_test.out riscv_test.S -L../../runtime/ -l:libruntime.a
-  $ rvlinux riscv_test.out | awk 'BEGIN{RS=""} {split($0, arr, "Instructions executed"); split(arr[1], rez, ">>> Program exited, "); printf "%s\n",rez[1]; printf "%s",rez[2]}'
+  $ qemu-riscv64-static riscv_test.out 
   true
-  exit code = 0 (0x0)
   $ ./riscv_test.exe <<- EOF > riscv_test.S
   > let list1 = [1; 2]
   > let list2 = [1; 2; 3]
   > let main = print_bool (compare_lists_gt list1 list2)
   > EOF
   $ riscv64-linux-gnu-gcc -static -o riscv_test.out riscv_test.S -L../../runtime/ -l:libruntime.a
-  $ rvlinux riscv_test.out | awk 'BEGIN{RS=""} {split($0, arr, "Instructions executed"); split(arr[1], rez, ">>> Program exited, "); printf "%s\n",rez[1]; printf "%s",rez[2]}'
+  $ qemu-riscv64-static riscv_test.out 
   false
-  exit code = 0 (0x0)
   $ ./riscv_test.exe <<- EOF > riscv_test.S
   > let main = print_bool (compare_lists_lte [true; true] [true; true])
   > EOF
   $ riscv64-linux-gnu-gcc -static -o riscv_test.out riscv_test.S -L../../runtime/ -l:libruntime.a
-  $ rvlinux riscv_test.out | awk 'BEGIN{RS=""} {split($0, arr, "Instructions executed"); split(arr[1], rez, ">>> Program exited, "); printf "%s\n",rez[1]; printf "%s",rez[2]}'
+  $ qemu-riscv64-static riscv_test.out 
   true
-  exit code = 0 (0x0)
   $ ./riscv_test.exe <<- EOF > riscv_test.S
   > let list1 = ['a'; 'a'; 'b']
   > let list2 = ['a'; 'a'; 'a']
   > let main = print_bool (compare_lists_gte list1 list2)
   > EOF
   $ riscv64-linux-gnu-gcc -static -o riscv_test.out riscv_test.S -L../../runtime/ -l:libruntime.a
-  $ rvlinux riscv_test.out | awk 'BEGIN{RS=""} {split($0, arr, "Instructions executed"); split(arr[1], rez, ">>> Program exited, "); printf "%s\n",rez[1]; printf "%s",rez[2]}'
+  $ qemu-riscv64-static riscv_test.out 
   true
-  exit code = 0 (0x0)
   $ ./riscv_test.exe <<- EOF > riscv_test.S
   > let main = print_bool (compare_lists_neq [] [])
   > EOF
   $ riscv64-linux-gnu-gcc -static -o riscv_test.out riscv_test.S -L../../runtime/ -l:libruntime.a
-  $ rvlinux riscv_test.out | awk 'BEGIN{RS=""} {split($0, arr, "Instructions executed"); split(arr[1], rez, ">>> Program exited, "); printf "%s\n",rez[1]; printf "%s",rez[2]}'
+  $ qemu-riscv64-static riscv_test.out 
   false
-  exit code = 0 (0x0)
   $ ./riscv_test.exe <<- EOF > riscv_test.S
   > let tuple1 = (1, 2, true, 'a')
   > let tuple2 = (1, 2, true, 'a')
   > let main = print_bool (compare_tuples_eq tuple1 tuple2)
   > EOF
   $ riscv64-linux-gnu-gcc -static -o riscv_test.out riscv_test.S -L../../runtime/ -l:libruntime.a
-  $ rvlinux riscv_test.out | awk 'BEGIN{RS=""} {split($0, arr, "Instructions executed"); split(arr[1], rez, ">>> Program exited, "); printf "%s\n",rez[1]; printf "%s",rez[2]}'
+  $ qemu-riscv64-static riscv_test.out 
   true
-  exit code = 0 (0x0)
   $ ./riscv_test.exe <<- EOF > riscv_test.S
   > let main = print_bool (compare_tuples_lte (1, 2, true, 'a') (1, 2, true, 'a'))
   > EOF
   $ riscv64-linux-gnu-gcc -static -o riscv_test.out riscv_test.S -L../../runtime/ -l:libruntime.a
-  $ rvlinux riscv_test.out | awk 'BEGIN{RS=""} {split($0, arr, "Instructions executed"); split(arr[1], rez, ">>> Program exited, "); printf "%s\n",rez[1]; printf "%s",rez[2]}'
+  $ qemu-riscv64-static riscv_test.out 
   true
-  exit code = 0 (0x0)
   $ ./riscv_test.exe <<- EOF > riscv_test.S
   > let tuple1 = (1, 1, true, 'a')
   > let tuple2 = (1, 2, true, 'a')
   > let main = print_bool (compare_tuples_gt tuple1 tuple2)
   > EOF
   $ riscv64-linux-gnu-gcc -static -o riscv_test.out riscv_test.S -L../../runtime/ -l:libruntime.a
-  $ rvlinux riscv_test.out | awk 'BEGIN{RS=""} {split($0, arr, "Instructions executed"); split(arr[1], rez, ">>> Program exited, "); printf "%s\n",rez[1]; printf "%s",rez[2]}'
+  $ qemu-riscv64-static riscv_test.out 
   false
-  exit code = 0 (0x0)
   $ ./riscv_test.exe <<- EOF > riscv_test.S
   > let main = print_bool (compare_tuples_gte ('a', 'b') ('b', 'b'))
   > EOF
   $ riscv64-linux-gnu-gcc -static -o riscv_test.out riscv_test.S -L../../runtime/ -l:libruntime.a
-  $ rvlinux riscv_test.out | awk 'BEGIN{RS=""} {split($0, arr, "Instructions executed"); split(arr[1], rez, ">>> Program exited, "); printf "%s\n",rez[1]; printf "%s",rez[2]}'
+  $ qemu-riscv64-static riscv_test.out 
   false
-  exit code = 0 (0x0)
   $ ./riscv_test.exe <<- EOF > riscv_test.S
   > let tuple1 = (1, 2, true, 'a')
   > let tuple2 = (1, 1, true, 'a')
   > let main = print_bool (compare_tuples_lt tuple1 tuple2)
   > EOF
   $ riscv64-linux-gnu-gcc -static -o riscv_test.out riscv_test.S -L../../runtime/ -l:libruntime.a
-  $ rvlinux riscv_test.out | awk 'BEGIN{RS=""} {split($0, arr, "Instructions executed"); split(arr[1], rez, ">>> Program exited, "); printf "%s\n",rez[1]; printf "%s",rez[2]}'
+  $ qemu-riscv64-static riscv_test.out 
   false
-  exit code = 0 (0x0)
   $ ./riscv_test.exe <<- EOF > riscv_test.S
   > let main = print_bool (compare_tuples_neq (1, 8) (1, 7))
   > EOF
   $ riscv64-linux-gnu-gcc -static -o riscv_test.out riscv_test.S -L../../runtime/ -l:libruntime.a
-  $ rvlinux riscv_test.out | awk 'BEGIN{RS=""} {split($0, arr, "Instructions executed"); split(arr[1], rez, ">>> Program exited, "); printf "%s\n",rez[1]; printf "%s",rez[2]}'
+  $ qemu-riscv64-static riscv_test.out 
   true
-  exit code = 0 (0x0)
   $ ./riscv_test.exe <<- EOF > riscv_test.S
   > let main = print_tuple (10, 20, 888, 60)
   > EOF
   $ riscv64-linux-gnu-gcc -static -o riscv_test.out riscv_test.S -L../../runtime/ -l:libruntime.a
-  $ rvlinux riscv_test.out | awk 'BEGIN{RS=""} {split($0, arr, "Instructions executed"); split(arr[1], rez, ">>> Program exited, "); printf "%s\n",rez[1]; printf "%s",rez[2]}'
+  $ qemu-riscv64-static riscv_test.out 
   (10, 20, 888, 60)
-  exit code = 0 (0x0)
   $ ./riscv_test.exe <<- EOF > riscv_test.S
   > let list_to_print = [0; 10; 100]
   > let main = print_list list_to_print
   > EOF
   $ riscv64-linux-gnu-gcc -static -o riscv_test.out riscv_test.S -L../../runtime/ -l:libruntime.a
-  $ rvlinux riscv_test.out | awk 'BEGIN{RS=""} {split($0, arr, "Instructions executed"); split(arr[1], rez, ">>> Program exited, "); printf "%s\n",rez[1]; printf "%s",rez[2]}'
+  $ qemu-riscv64-static riscv_test.out 
   [0; 10; 100]
-  exit code = 0 (0x0)
   $ ./riscv_test.exe <<- EOF > riscv_test.S
   > let number_to_print = 5
   > let main = print_int number_to_print
   > EOF
   $ riscv64-linux-gnu-gcc -static -o riscv_test.out riscv_test.S -L../../runtime/ -l:libruntime.a
-  $ rvlinux riscv_test.out | awk 'BEGIN{RS=""} {split($0, arr, "Instructions executed"); split(arr[1], rez, ">>> Program exited, "); printf "%s\n",rez[1]; printf "%s",rez[2]}'
+  $ qemu-riscv64-static riscv_test.out 
   5
-  exit code = 0 (0x0)
   $ ./riscv_test.exe <<- EOF > riscv_test.S
   > let bool_to_print = true
   > let main = print_bool bool_to_print
   > EOF
   $ riscv64-linux-gnu-gcc -static -o riscv_test.out riscv_test.S -L../../runtime/ -l:libruntime.a
-  $ rvlinux riscv_test.out | awk 'BEGIN{RS=""} {split($0, arr, "Instructions executed"); split(arr[1], rez, ">>> Program exited, "); printf "%s\n",rez[1]; printf "%s",rez[2]}'
+  $ qemu-riscv64-static riscv_test.out 
   true
-  exit code = 0 (0x0)
   $ ./riscv_test.exe <<- EOF > riscv_test.S
   > let rec filter predicate list =
   >   match list with
@@ -533,18 +473,16 @@
   > let main = print_list (filter (fun v -> v > 10) [1;2;3])
   > EOF
   $ riscv64-linux-gnu-gcc -static -o riscv_test.out riscv_test.S -L../../runtime/ -l:libruntime.a
-  $ rvlinux riscv_test.out | awk 'BEGIN{RS=""} {split($0, arr, "Instructions executed"); split(arr[1], rez, ">>> Program exited, "); printf "%s\n",rez[1]; printf "%s",rez[2]}'
+  $ qemu-riscv64-static riscv_test.out 
   []
-  exit code = 0 (0x0)
   $ ./riscv_test.exe <<- EOF > riscv_test.S
   > let phi n = let rec helper last1 last2 n = if n > 0 then helper last2 (last1 + last2) (n - 1) else last2 in helper 1 1 (n - 2)
   > 
   > let main = print_int (phi 10)
   > EOF
   $ riscv64-linux-gnu-gcc -static -o riscv_test.out riscv_test.S -L../../runtime/ -l:libruntime.a
-  $ rvlinux riscv_test.out | awk 'BEGIN{RS=""} {split($0, arr, "Instructions executed"); split(arr[1], rez, ">>> Program exited, "); printf "%s\n",rez[1]; printf "%s",rez[2]}'
+  $ qemu-riscv64-static riscv_test.out 
   55
-  exit code = 0 (0x0)
   $ ./riscv_test.exe <<- EOF > riscv_test.S
   > let product list =
   >   let rec helper list acc = match list with
@@ -556,9 +494,8 @@
   > let main = print_int (product [1; 2; 7; 12; 10; 3; 21])
   > EOF
   $ riscv64-linux-gnu-gcc -static -o riscv_test.out riscv_test.S -L../../runtime/ -l:libruntime.a
-  $ rvlinux riscv_test.out | awk 'BEGIN{RS=""} {split($0, arr, "Instructions executed"); split(arr[1], rez, ">>> Program exited, "); printf "%s\n",rez[1]; printf "%s",rez[2]}'
+  $ qemu-riscv64-static riscv_test.out 
   105840
-  exit code = 0 (0x0)
   $ ./riscv_test.exe <<- EOF > riscv_test.S
   > let sum list =
   >   let rec helper list acc = match list with
@@ -570,7 +507,7 @@
   > let main = print_int (sum [1; 2; 7; 12; 10; 3; 21; 101; 78; 42; 38])
   > EOF
   $ riscv64-linux-gnu-gcc -static -o riscv_test.out riscv_test.S -L../../runtime/ -l:libruntime.a
-  $ rvlinux riscv_test.out | awk 'BEGIN{RS=""} {split($0, arr, "Instructions executed"); split(arr[1], rez, ">>> Program exited, "); printf "%s\n",rez[1]}'
+  $ qemu-riscv64-static riscv_test.out 
   315
   $ ./riscv_test.exe <<- EOF > riscv_test.S
   > let length list =
@@ -583,7 +520,7 @@
   > let main = print_int (length [1; 23; 12; 657; 123; 346; 6; 234 ; 99; 34; 78; 28; 123; 0])
   > EOF
   $ riscv64-linux-gnu-gcc -static -o riscv_test.out riscv_test.S -L../../runtime/ -l:libruntime.a
-  $ rvlinux riscv_test.out | awk 'BEGIN{RS=""} {split($0, arr, "Instructions executed"); split(arr[1], rez, ">>> Program exited, "); printf "%s\n",rez[1]}'
+  $ qemu-riscv64-static riscv_test.out 
   14
   $ ./riscv_test.exe <<- EOF > riscv_test.S
   > let count_solutions_of_sq_equation a b c =
@@ -596,7 +533,7 @@
   > let main = print_int (count_solutions_of_sq_equation 2 9 4)
   > EOF
   $ riscv64-linux-gnu-gcc -static -o riscv_test.out riscv_test.S -L../../runtime/ -l:libruntime.a
-  $ rvlinux riscv_test.out | awk 'BEGIN{RS=""} {split($0, arr, "Instructions executed"); split(arr[1], rez, ">>> Program exited, "); printf "%s\n",rez[1]}'
+  $ qemu-riscv64-static riscv_test.out 
   2
   $ ./riscv_test.exe <<- EOF > riscv_test.S
   > let count_solutions_of_sq_equation a b c =
@@ -609,7 +546,7 @@
   > let main = print_int (count_solutions_of_sq_equation 3 6 3)
   > EOF
   $ riscv64-linux-gnu-gcc -static -o riscv_test.out riscv_test.S -L../../runtime/ -l:libruntime.a
-  $ rvlinux riscv_test.out | awk 'BEGIN{RS=""} {split($0, arr, "Instructions executed"); split(arr[1], rez, ">>> Program exited, "); printf "%s\n",rez[1]}'
+  $ qemu-riscv64-static riscv_test.out 
   1
   $ ./riscv_test.exe <<- EOF > riscv_test.S
   > let count_solutions_of_sq_equation a b c =
@@ -622,7 +559,7 @@
   > let main = print_int (count_solutions_of_sq_equation 1 2 3)
   > EOF
   $ riscv64-linux-gnu-gcc -static -o riscv_test.out riscv_test.S -L../../runtime/ -l:libruntime.a
-  $ rvlinux riscv_test.out | awk 'BEGIN{RS=""} {split($0, arr, "Instructions executed"); split(arr[1], rez, ">>> Program exited, "); printf "%s\n",rez[1]}'
+  $ qemu-riscv64-static riscv_test.out 
   0
   $ ./riscv_test.exe <<- EOF > riscv_test.S
   > let rec map f list = match list with
@@ -634,7 +571,7 @@
   > let main = print_list (map sq [1;2;3;4;5;6;7;8;9;10])
   > EOF
   $ riscv64-linux-gnu-gcc -static -o riscv_test.out riscv_test.S -L../../runtime/ -l:libruntime.a
-  $ rvlinux riscv_test.out | awk 'BEGIN{RS=""} {split($0, arr, "Instructions executed"); split(arr[1], rez, ">>> Program exited, "); printf "%s\n",rez[1]}'
+  $ qemu-riscv64-static riscv_test.out 
   [1; 4; 9; 16; 25; 36; 49; 64; 81; 100]
   $ ./riscv_test.exe <<- EOF > riscv_test.S
   > let f x y z =
@@ -646,7 +583,7 @@
   > let main = print_bool (f (10 * 5 > 49) (58 / 2 = 27) (10 <> 20))
   > EOF
   $ riscv64-linux-gnu-gcc -static -o riscv_test.out riscv_test.S -L../../runtime/ -l:libruntime.a
-  $ rvlinux riscv_test.out | awk 'BEGIN{RS=""} {split($0, arr, "Instructions executed"); split(arr[1], rez, ">>> Program exited, "); printf "%s\n",rez[1]}'
+  $ qemu-riscv64-static riscv_test.out 
   false
   $ ./riscv_test.exe <<- EOF > riscv_test.S
   > let pifagor_check = fun x y z -> x * x + y * y = z * z
@@ -654,7 +591,7 @@
   > let main = print_bool (pifagor_check 3 4 5)
   > EOF
   $ riscv64-linux-gnu-gcc -static -o riscv_test.out riscv_test.S -L../../runtime/ -l:libruntime.a
-  $ rvlinux riscv_test.out | awk 'BEGIN{RS=""} {split($0, arr, "Instructions executed"); split(arr[1], rez, ">>> Program exited, "); printf "%s\n",rez[1]}'
+  $ qemu-riscv64-static riscv_test.out 
   true
   $ ./riscv_test.exe <<- EOF > riscv_test.S
   > let some_string = "We are the champions, my friend"
@@ -662,7 +599,7 @@
   > let main = print_string (some_string)
   > EOF
   $ riscv64-linux-gnu-gcc -static -o riscv_test.out riscv_test.S -L../../runtime/ -l:libruntime.a
-  $ rvlinux riscv_test.out | awk 'BEGIN{RS=""} {split($0, arr, "Instructions executed"); split(arr[1], rez, ">>> Program exited, "); printf "%s\n",rez[1]}'
+  $ qemu-riscv64-static riscv_test.out 
   We are the champions, my friend
   $ ./riscv_test.exe <<- EOF > riscv_test.S
   > let check_password password = 
@@ -671,7 +608,7 @@
   > let main = print_string (check_password "qwerty")
   > EOF
   $ riscv64-linux-gnu-gcc -static -o riscv_test.out riscv_test.S -L../../runtime/ -l:libruntime.a
-  $ rvlinux riscv_test.out | awk 'BEGIN{RS=""} {split($0, arr, "Instructions executed"); split(arr[1], rez, ">>> Program exited, "); printf "%s\n",rez[1]}'
+  $ qemu-riscv64-static riscv_test.out 
   FAIL
   $ ./riscv_test.exe <<- EOF > riscv_test.S
   > let check_password password = 
@@ -680,13 +617,13 @@
   > let main = print_string (check_password "qwerty123")
   > EOF
   $ riscv64-linux-gnu-gcc -static -o riscv_test.out riscv_test.S -L../../runtime/ -l:libruntime.a
-  $ rvlinux riscv_test.out | awk 'BEGIN{RS=""} {split($0, arr, "Instructions executed"); split(arr[1], rez, ">>> Program exited, "); printf "%s\n",rez[1]}'
+  $ qemu-riscv64-static riscv_test.out 
   Success
   $ ./riscv_test.exe <<- EOF > riscv_test.S
   > let main = print_string (concat_strings "Are we crazy?" " - obviously we are!")
   > EOF
   $ riscv64-linux-gnu-gcc -static -o riscv_test.out riscv_test.S -L../../runtime/ -l:libruntime.a
-  $ rvlinux riscv_test.out | awk 'BEGIN{RS=""} {split($0, arr, "Instructions executed"); split(arr[1], rez, ">>> Program exited, "); printf "%s\n",rez[1]}'
+  $ qemu-riscv64-static riscv_test.out 
   Are we crazy? - obviously we are!
   $ ./riscv_test.exe <<- EOF > riscv_test.S
   > let list1 = [1; 2]
@@ -694,7 +631,7 @@
   > let main = print_list (concat_lists list1 list2)
   > EOF
   $ riscv64-linux-gnu-gcc -static -o riscv_test.out riscv_test.S -L../../runtime/ -l:libruntime.a
-  $ rvlinux riscv_test.out | awk 'BEGIN{RS=""} {split($0, arr, "Instructions executed"); split(arr[1], rez, ">>> Program exited, "); printf "%s\n",rez[1]}'
+  $ qemu-riscv64-static riscv_test.out 
   [1; 2; 50; 45; 9; 65]
   $ ./riscv_test.exe <<- EOF > riscv_test.S
   > let fst pair =
@@ -703,7 +640,7 @@
   > let main = print_int (fst (13, 225))
   > EOF
   $ riscv64-linux-gnu-gcc -static -o riscv_test.out riscv_test.S -L../../runtime/ -l:libruntime.a
-  $ rvlinux riscv_test.out | awk 'BEGIN{RS=""} {split($0, arr, "Instructions executed"); split(arr[1], rez, ">>> Program exited, "); printf "%s\n",rez[1]}'
+  $ qemu-riscv64-static riscv_test.out 
   13
   $ ./riscv_test.exe <<- EOF > riscv_test.S
   > let snd pair =
@@ -712,7 +649,7 @@
   > let main = print_int( snd (13, 225) )
   > EOF
   $ riscv64-linux-gnu-gcc -static -o riscv_test.out riscv_test.S -L../../runtime/ -l:libruntime.a
-  $ rvlinux riscv_test.out | awk 'BEGIN{RS=""} {split($0, arr, "Instructions executed"); split(arr[1], rez, ">>> Program exited, "); printf "%s\n",rez[1]}'
+  $ qemu-riscv64-static riscv_test.out 
   225
   $ ./riscv_test.exe <<- EOF > riscv_test.S
   > let rec lists_sum list1 list2 =
@@ -727,7 +664,7 @@
   > let main = print_list (lists_sum list1 list2)
   > EOF
   $ riscv64-linux-gnu-gcc -static -o riscv_test.out riscv_test.S -L../../runtime/ -l:libruntime.a
-  $ rvlinux riscv_test.out | awk 'BEGIN{RS=""} {split($0, arr, "Instructions executed"); split(arr[1], rez, ">>> Program exited, "); printf "%s\n",rez[1]}'
+  $ qemu-riscv64-static riscv_test.out 
   [15; 5; 24; 17; 15]
   $ ./riscv_test.exe <<- EOF > riscv_test.S
   > let rec remove_last list = match list with
@@ -738,7 +675,7 @@
   > let main = print_list (remove_last [1;2;3;4;5])
   > EOF
   $ riscv64-linux-gnu-gcc -static -o riscv_test.out riscv_test.S -L../../runtime/ -l:libruntime.a
-  $ rvlinux riscv_test.out | awk 'BEGIN{RS=""} {split($0, arr, "Instructions executed"); split(arr[1], rez, ">>> Program exited, "); printf "%s\n",rez[1]}'
+  $ qemu-riscv64-static riscv_test.out 
   [1; 2; 3; 4]
   $ ./riscv_test.exe <<- EOF > riscv_test.S
   > let apply_function f arg1 arg2 = print_int (f arg1 arg2)
@@ -748,7 +685,7 @@
   > let main = apply_function (sum5 50 14 26) 95 110
   > EOF
   $ riscv64-linux-gnu-gcc -static -o riscv_test.out riscv_test.S -L../../runtime/ -l:libruntime.a
-  $ rvlinux riscv_test.out | awk 'BEGIN{RS=""} {split($0, arr, "Instructions executed"); split(arr[1], rez, ">>> Program exited, "); printf "%s\n",rez[1]}'
+  $ qemu-riscv64-static riscv_test.out 
   295
   $ ./riscv_test.exe <<- EOF > riscv_test.S
   > let fst p = match p with (a,b) -> a
@@ -766,7 +703,7 @@
   >   0
   > EOF
   $ riscv64-linux-gnu-gcc -static -o riscv_test.out riscv_test.S -L../../runtime/ -l:libruntime.a
-  $ rvlinux riscv_test.out | awk 'BEGIN{RS=""} {split($0, arr, "Instructions executed"); split(arr[1], rez, ">>> Program exited, "); printf "%s\n",rez[1]}'
+  $ qemu-riscv64-static riscv_test.out 
   42
   $ ./riscv_test.exe <<- EOF > riscv_test.S
   > let rec fack n k = if n<=1 then k 1 else fack (n-1) (fun m -> k(m*n))
@@ -774,35 +711,35 @@
   > let main = print_int (fac 6)
   > EOF
   $ riscv64-linux-gnu-gcc -static -o riscv_test.out riscv_test.S -L../../runtime/ -l:libruntime.a
-  $ rvlinux riscv_test.out | awk 'BEGIN{RS=""} {split($0, arr, "Instructions executed"); split(arr[1], rez, ">>> Program exited, "); printf "%s\n",rez[1]}'
+  $ qemu-riscv64-static riscv_test.out 
   720
   $ ./riscv_test.exe <<- EOF > riscv_test.S
   > let main = (fun x -> x) (fun x -> x) print_int 42
   > EOF
   $ riscv64-linux-gnu-gcc -static -o riscv_test.out riscv_test.S -L../../runtime/ -l:libruntime.a
-  $ rvlinux riscv_test.out | awk 'BEGIN{RS=""} {split($0, arr, "Instructions executed"); split(arr[1], rez, ">>> Program exited, "); printf "%s\n",rez[1]}'
+  $ qemu-riscv64-static riscv_test.out 
   42
   $ ./riscv_test.exe <<- EOF > riscv_test.S
   > let func truee = truee
   > let main = print_string (func "Now truee is correct id")  
   > EOF
   $ riscv64-linux-gnu-gcc -static -o riscv_test.out riscv_test.S -L../../runtime/ -l:libruntime.a
-  $ rvlinux riscv_test.out | awk 'BEGIN{RS=""} {split($0, arr, "Instructions executed"); split(arr[1], rez, ">>> Program exited, "); printf "%s\n",rez[1]}'
+  $ qemu-riscv64-static riscv_test.out 
   Now truee is correct id
   $ ./riscv_test.exe <<- EOF > riscv_test.S
   > let main = print_int (1/0)
   > EOF
   $ riscv64-linux-gnu-gcc -static -o riscv_test.out riscv_test.S -L../../runtime/ -l:libruntime.a
-  $ rvlinux riscv_test.out | awk 'BEGIN{RS=""} {split($0, arr, "Instructions executed"); split(arr[1], rez, ">>> Program exited, "); printf "%s",rez[1]; printf "%s",rez[2]}'
+  $ qemu-riscv64-static riscv_test.out 
   Exception: devision by zero. Exited with 1
-  exit code = 1 (0x1)
+  [1]
   $ ./riscv_test.exe <<- EOF > riscv_test.S -opaque-pointers
   > let rec fib n =
   >   if n=0 then 0 else if n=1 then 1 else fib (n-2) + fib (n-1)
   > let main = let u = print_int (fib 8) in 0
   > EOF
   $ riscv64-linux-gnu-gcc -static -o riscv_test.out riscv_test.S -L../../runtime/ -l:libruntime.a
-  $ rvlinux riscv_test.out | awk 'BEGIN{RS=""} {split($0, arr, "Instructions executed"); split(arr[1], rez, ">>> Program exited, "); printf "%s\n",rez[1]}'
+  $ qemu-riscv64-static riscv_test.out 
   21
   $ ./riscv_test.exe <<- EOF > riscv_test.S -opaque-pointers
   > let rec fib n k =
@@ -810,5 +747,5 @@
   > let main = let u = print_int (fib 8 (fun w -> w)) in 0
   > EOF
   $ riscv64-linux-gnu-gcc -static -o riscv_test.out riscv_test.S -L../../runtime/ -l:libruntime.a
-  $ rvlinux riscv_test.out | awk 'BEGIN{RS=""} {split($0, arr, "Instructions executed"); split(arr[1], rez, ">>> Program exited, "); printf "%s\n",rez[1]}'
+  $ qemu-riscv64-static riscv_test.out 
   21

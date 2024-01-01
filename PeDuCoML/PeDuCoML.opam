@@ -31,3 +31,9 @@ build: [
   ]
 ]
 dev-repo: "git+https://github.com/airh4ck/comp23hw.git"
+depexts: [
+  [ "nasm" "llvm-14-dev" "clang-14" "gcc-12" "pkg-config" 
+    "qemu-user-static" "binutils-riscv64-linux-gnu"
+  ] {os-distribution = "debian"}
+  #["llvm16-dev"] {os-distribution = "alpine"}
+]

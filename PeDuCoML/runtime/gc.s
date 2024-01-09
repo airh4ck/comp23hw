@@ -28,23 +28,23 @@ gc_get_stack_top:
     .globl gc_stack_scan
     .type gc_stack_scan, @function
 gc_stack_scan:
-    addi sp, sp, -16
-    sd ra, 8(sp)
-    sd s0, 0(sp)
-    addi s0, sp, 16
+    addi sp, sp, -24
+    sd ra, 16(sp)
+    sd s0, 8(sp)
+    addi s0, sp, 24
     mv t0, sp
     mv t1, a0
 .Lstack_loop:
     bge t0, t1, .Lloop_break
-    mv a0, t0
+    ld a0, 0(t0)
     mv a1, sp
-    mv a2, t0
+    sd t0, 0(sp)
     call check_pointer
-    mv t0, a2
+    ld t0, 0(sp)
     addi t0, t0, 8
     j .Lstack_loop
 .Lloop_break:
-    ld ra, 8(sp)
-    ld s0, 0(sp)
-    addi sp, sp, 16
+    ld ra, 16(sp)
+    ld s0, 8(sp)
+    addi sp, sp, 24
     ret 

@@ -5,38 +5,7 @@
 static mempool *pool = NULL;
 static int64_t stack_bottom = 0;
 const size_t INFO_SIZE = sizeof(mm_block);
-const size_t INITIAL_SIZE = 4096;
-
-typedef struct
-{
-    int64_t *data;
-    size_t cur_size;
-    size_t allocated_size;
-} list;
-
-void push_back(list *lst, int64_t elem)
-{
-    if (lst->data == NULL)
-    {
-        lst->data = (int64_t *)malloc(4 * sizeof(int64_t));
-        lst->cur_size = 0;
-        lst->allocated_size = 4;
-    }
-    else if (lst->cur_size >= lst->allocated_size)
-    {
-        lst->allocated_size += 4;
-        lst->data = (int64_t *)realloc(lst->data, lst->allocated_size * sizeof(int64_t));
-    }
-
-    lst->data[lst->cur_size++] = elem;
-}
-
-void clear(list *lst)
-{
-    lst->cur_size = 0;
-}
-
-static list *marked_list;
+const size_t INITIAL_SIZE = 64;
 
 void peducoml_init(int64_t sb)
 {
@@ -52,11 +21,6 @@ void peducoml_init(int64_t sb)
     block = pool->secondary_bank;
     block->is_free = 1;
     block->size = INITIAL_SIZE;
-
-    marked_list = (list *)malloc(sizeof(list));
-    marked_list->data = NULL;
-    marked_list->cur_size = 0;
-    marked_list->allocated_size = 0;
 }
 
 int gc_get_stack_bottom()
@@ -79,15 +43,15 @@ void *peducoml_alloc_in_bank(size_t size, void *bank)
     void *cur = bank;
     mm_block *cur_block = cur;
 
-    while (!cur_block->is_free && cur_block->size < size)
+    while (cur < bank + INITIAL_SIZE && (!cur_block->is_free || cur_block->size < size))
     {
-        if (cur > bank + INITIAL_SIZE)
-        {
-            return NULL;
-        }
-
         cur += cur_block->size + INFO_SIZE;
         cur_block = cur;
+    }
+
+    if (cur >= bank + INITIAL_SIZE)
+    {
+        return NULL;
     }
 
     mm_block *next_block = cur + INFO_SIZE + size;
@@ -108,6 +72,18 @@ void *peducoml_alloc_in_bank(size_t size, void *bank)
     return cur + INFO_SIZE;
 }
 
+void print_blocks()
+{
+    void *current = pool->current_bank;
+    mm_block *block = current;
+    while (current < pool->current_bank + INITIAL_SIZE)
+    {
+        fprintf(stderr, "%ld %ld\n", block->is_free, block->size);
+        current += block->size + INFO_SIZE;
+        block = current;
+    }
+}
+
 void *peducoml_alloc(size_t size)
 {
     void *alloc = peducoml_alloc_in_bank(size, pool->current_bank);
@@ -116,6 +92,7 @@ void *peducoml_alloc(size_t size)
         return alloc;
     }
 
+    gc();
     alloc = peducoml_alloc_in_bank(size, pool->current_bank);
     if (alloc != NULL)
     {
@@ -134,16 +111,13 @@ void swap(void *left, void *right)
 
 void gc()
 {
+    fprintf(stderr, "Starting garbage collection\n");
+    print_blocks();
     mm_block *block = pool->secondary_bank;
     block->is_free = 1;
     block->size = INITIAL_SIZE;
     gc_stack_scan(stack_bottom);
     swap(pool->current_bank, pool->secondary_bank);
-}
-
-void mark(int64_t ptr)
-{
-    push_back(marked_list, ptr);
 }
 
 void check_pointer(int64_t ptr, int64_t cur_stack)

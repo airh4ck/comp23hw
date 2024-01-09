@@ -18,3 +18,9 @@ SPDX-License-Identifier: CC0-1.0
   $ riscv64-linux-gnu-gcc -static -o riscv_test.out riscv_test.S -L../../runtime/ -l:libruntime.a
   $ qemu-riscv64-static riscv_test.out 
   21
+ 
+  $ ./riscv_test.exe <<- EOF > riscv_test.S -opaque-pointers
+  > let sum a b с = a + b 
+  > EOF
+$ riscv64-linux-gnu-gcc -static -o riscv_test.out riscv_test.S -L../../runtime/ -l:libruntime.a
+  

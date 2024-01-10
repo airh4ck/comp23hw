@@ -204,7 +204,7 @@ let build_gt left_operand right_operand = build_lt right_operand left_operand
 let build_ret value =
   if value.value <> "a0"
   then sprintf "%s\n" (get_load_instruction "a0" value.value value.typ) |> append;
-  let current_stack_offset = - !current_s0_offset in
+  let current_stack_offset = -1 * !current_s0_offset in
   sprintf
     "    ld ra,%d(sp)\n    ld s0,%d(sp)\n    addi sp,sp,%d\n    ret\n"
     (current_stack_offset - 8)

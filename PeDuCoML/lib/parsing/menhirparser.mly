@@ -93,9 +93,7 @@ pattern :
     | p = pcons { p }
     | p = pwildcard { p }
     | id = identifier { 
-        if String.for_all (fun c -> c = '_') id
-        then pwildcard ()
-        else pidentifier id 
+        pidentifier id 
     }
     | LBR p = pattern RBR { p }
 

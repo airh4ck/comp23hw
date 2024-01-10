@@ -120,9 +120,7 @@ ptuple_simple :
     | p = plist { p }
     | p = pcons { p }
     | id = identifier { 
-        if String.for_all (fun c -> c = '_') id
-        then pwildcard ()
-        else pidentifier id 
+        pidentifier id 
     } 
 
 plist : 

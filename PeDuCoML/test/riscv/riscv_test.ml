@@ -11,7 +11,7 @@ open PeDuCoML.Lambda_lift
 open PeDuCoML.Match_elim
 open PeDuCoML.Riscv_comp
 
-let print_llvm code =
+let print_riscv code =
   match parse code with
   | Ok ast ->
     (match R.run (check_types ast) with
@@ -32,5 +32,5 @@ let print_llvm code =
 
 let _ =
   let code = Stdio.In_channel.input_all Stdlib.stdin in
-  print_llvm code
+  print_riscv code
 ;;

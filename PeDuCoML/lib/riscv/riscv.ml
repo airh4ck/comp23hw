@@ -58,8 +58,6 @@ let get_load_instruction dest src = function
   | Offset -> asprintf "    ld %s,%s" dest src
 ;;
 
-(* Why 5? *)
-(* Should we declare these functions here??? *)
 let global_functions : (string, rv_value * int) Hashtbl.t =
   Hashtbl.create (Base.List.length runtime + Base.List.length stdlib)
 ;;

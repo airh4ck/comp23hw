@@ -49,8 +49,6 @@ rule token = parse
     | ']' { RSQBR }
     | '=' { EQ }
     | "::" { CONS }
-    (* unary operators *)
-    (* binary operators *)
     | "||" { OR }
     | "&&" { LOG_AND }
     | "<>" { NEQ }

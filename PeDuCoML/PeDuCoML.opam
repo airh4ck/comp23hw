@@ -12,7 +12,6 @@ depends: [
   "dune" {>= "3.4"}
   "ppx_expect"
   "ppx_deriving"
-  "angstrom"
   "bisect_ppx"
   "odoc" {with-doc}
 ]

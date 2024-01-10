@@ -64,7 +64,6 @@ let rec codegen_immexpr args_number env =
     if args > 0
     then ok (func, args)
     else ok @@ (build_call (lookup_function_exn "peducoml_apply0") [ func ], args)
-    (* else ok (func, args) *)
   | ImmId (AnfId id) ->
     (match find env (AnfId id) with
      | None -> AnfId id |> unbound |> error
@@ -139,7 +138,6 @@ let rec codegen_cexpr args_number env = function
     let* tail, _ = codegen_immexpr args_number env tail in
     ok @@ build_call (lookup_function_exn "peducoml_add_to_list") [ tail; head ]
   | CIf (condition, true_branch, false_branch) ->
-    (* TODO: true and false branches don't reuse the same addresses in stack, leads to memory overhead *)
     let* condition, _ = codegen_immexpr args_number env condition in
     let alloca = build_alloca () in
     let false_label = get_basicblock "FB" in
@@ -162,11 +160,11 @@ and codegen_aexpr args_number env = function
     codegen_aexpr args_number env aexpr
 ;;
 
-let codegen_global_scope_function args_numbers env (func : global_scope_function) =
+let codegen_global_scope_function args_numbers (func : global_scope_function) =
   let function_name, arg_list, body = func in
   let func_rv_value, args = declare_function function_name arg_list in
   let env =
-    Base.List.fold_right args ~init:env ~f:(fun (arg, location) acc ->
+    Base.List.fold_right args ~init:empty ~f:(fun (arg, location) acc ->
       set acc ~key:arg ~data:location)
   in
   let* body = codegen_aexpr (Base.Map.find_exn args_numbers function_name) env body in
@@ -185,11 +183,11 @@ let codegen_global_scope_function args_numbers env (func : global_scope_function
 
 let codegen program : (unit, riscv_error) Result.t =
   let args_number = gather_args_numbers program in
-  let rec codegen env = function
+  let rec codegen = function
     | [] -> ok ()
     | head :: tail ->
-      let* _ = codegen_global_scope_function args_number env head in
-      codegen env tail
+      let* _ = codegen_global_scope_function args_number head in
+      codegen tail
   in
-  codegen empty program
+  codegen program
 ;;

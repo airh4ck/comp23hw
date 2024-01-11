@@ -107,10 +107,36 @@ void *peducoml_alloc(size_t size)
 }
 
 void swap(void *left, void *right)
+void peducoml_free(void *ptr)
 {
     int64_t tmp = left;
     left = right;
     right = tmp;
+    if (ptr == NULL)
+        return;
+
+    mm_block *block_info = ptr - INFO_SIZE;
+    block_info->is_free = 1;
+    mm_block *next_block = ptr + block_info->size;
+
+    if (next_block->is_free)
+    {
+        block_info->size = block_info->size + next_block->size + INFO_SIZE;
+    }
+
+    void *current = pool->current_bank;
+    mm_block *prev_block = pool->current_bank;
+    while (current < pool->current_bank + INITIAL_SIZE)
+    {
+        if (current + INFO_SIZE + prev_block->size == ptr - INFO_SIZE && prev_block->is_free)
+        {
+            prev_block->size += block_info->size + INFO_SIZE;
+
+            return;
+        }
+        current += INFO_SIZE + prev_block->size;
+        prev_block = current;
+    }
 }
 
 void gc()

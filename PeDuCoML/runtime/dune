@@ -4,6 +4,8 @@
  (action
   (run gcc -fPIC -shared %{deps} -o %{targets})))
 
+; TODO: compile gc.c, gc.h, gc.s
+
 (rule
  (targets peducoml_runtime_rv64.o)
  (deps runtime.c)

@@ -7,6 +7,8 @@ static int64_t stack_bottom = 0;
 const size_t INFO_SIZE = sizeof(mm_block);
 const size_t INITIAL_SIZE = 1048576;
 
+// TODO: Recursive heap scanning. Without it, some required objects may be deleted
+
 void peducoml_init(int64_t sb)
 {
     stack_bottom = sb;

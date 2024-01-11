@@ -132,10 +132,15 @@ let declare_function name arg_list =
   current_s0_offset := -24;
   let arg_list =
     Base.List.foldi arg_list ~init:[] ~f:(fun ind acc arg ->
-      sprintf "    sd a%d,%d(s0)\n" ind !current_s0_offset |> append;
-      let storage_location = string_of_int !current_s0_offset ^ "(s0)" |> offset in
-      current_s0_offset := !current_s0_offset - 8;
-      (arg, storage_location) :: acc)
+      if ind < 8
+      then (
+        sprintf "    sd a%d,%d(s0)\n" ind !current_s0_offset |> append;
+        let storage_location = string_of_int !current_s0_offset ^ "(s0)" |> offset in
+        current_s0_offset := !current_s0_offset - 8;
+        (arg, storage_location) :: acc)
+      else (
+        let storage_location = string_of_int ((ind - 8) * 8) ^ "(s0)" |> offset in
+        (arg, storage_location) :: acc))
   in
   let binding = binding name in
   Hashtbl.add global_functions name (binding, Base.List.length arg_list);

@@ -4,16 +4,26 @@
  (action
   (run gcc -fPIC -shared %{deps} -o %{targets})))
 
-; TODO: compile gc.c, gc.h, gc.s
-
 (rule
  (targets peducoml_runtime_rv64.o)
  (deps runtime.c)
+ (action
+  (run riscv64-linux-gnu-gcc -c %{deps} -I ../../../runtime -o %{targets})))
+
+(rule
+ (targets peducoml_gc_rv64.o)
+ (deps gc.c)
+ (action
+  (run riscv64-linux-gnu-gcc -c %{deps} -I ../../../runtime -o %{targets})))
+
+(rule
+ (targets peducoml_gc_asm_rv64.o)
+ (deps gc.s)
  (action
   (run riscv64-linux-gnu-gcc -c %{deps} -o %{targets})))
 
 (rule
  (targets libruntime.a)
- (deps peducoml_runtime_rv64.o)
+ (deps peducoml_runtime_rv64.o peducoml_gc_rv64.o peducoml_gc_asm_rv64.o)
  (action
   (run ar rcs %{targets} %{deps})))

@@ -2,8 +2,20 @@
 #include <stdint.h>
 #include <malloc.h>
 #include <stdlib.h>
-
+// #ifdef __riscv
+#include "gc.h"
+// #endif
 // Application processing
+
+void *my_malloc(size_t __size)
+{
+#ifdef __riscv
+    fprintf(stderr, "Using custom malloc\n");
+    return peducoml_alloc(__size);
+#else
+    return malloc(__size);
+#endif
+}
 
 typedef struct closure_struct
 {
@@ -31,7 +43,7 @@ static int64_t is_closure(int64_t ptr)
 
 static void realloc_ptrs_storage()
 {
-    int64_t *new_storage = (int64_t *)malloc((stored_ptrs_len + 64) * sizeof(int64_t));
+    int64_t *new_storage = (int64_t *)my_malloc((stored_ptrs_len + 64) * sizeof(int64_t));
     int64_t new_storage_index = 0;
     int64_t last_stored_ptrs_len = stored_ptrs_len;
     for (int64_t i = 0; i < last_stored_ptrs_len; i++)
@@ -55,7 +67,7 @@ static void add_to_closure_ptrs(int64_t ptr)
 {
     if (stored_ptrs_len == 0)
     {
-        closure_ptrs = (int64_t *)malloc(64 * sizeof(int64_t));
+        closure_ptrs = (int64_t *)my_malloc(64 * sizeof(int64_t));
     }
 
     closure_ptrs[stored_ptrs_len] = ptr;
@@ -82,11 +94,11 @@ extern int64_t peducoml_alloc_closure(int64_t ptr, int64_t total_args)
     if (is_closure(ptr) != 0)
     {
         closure *old_closure = (closure *)ptr;
-        closure *new_closure = (closure *)malloc(sizeof(closure));
+        closure *new_closure = (closure *)my_malloc(sizeof(closure));
         new_closure->func = old_closure->func;
         new_closure->total_args = old_closure->total_args;
         new_closure->len_applied_args = old_closure->len_applied_args;
-        new_closure->applied_args = (int64_t *)malloc((old_closure->total_args) * sizeof(int64_t));
+        new_closure->applied_args = (int64_t *)my_malloc((old_closure->total_args) * sizeof(int64_t));
         for (int64_t i = 0; i < old_closure->len_applied_args; i++)
         {
             new_closure->applied_args[i] = old_closure->applied_args[i];
@@ -96,11 +108,11 @@ extern int64_t peducoml_alloc_closure(int64_t ptr, int64_t total_args)
         return (int64_t)new_closure;
     }
 
-    closure *closure_ptr = (closure *)malloc(sizeof(closure));
+    closure *closure_ptr = (closure *)my_malloc(sizeof(closure));
     closure_ptr->func = (int64_t(*)())ptr;
     closure_ptr->total_args = total_args;
     closure_ptr->len_applied_args = 0;
-    closure_ptr->applied_args = (int64_t *)malloc(total_args * sizeof(int64_t));
+    closure_ptr->applied_args = (int64_t *)my_malloc(total_args * sizeof(int64_t));
     add_to_closure_ptrs((int64_t)closure_ptr);
 
     return (int64_t)closure_ptr;
@@ -395,7 +407,7 @@ typedef struct node_struct
 
 extern int64_t peducoml_alloc_list()
 {
-    node *address = (node *)malloc(sizeof(node));
+    node *address = (node *)my_malloc(sizeof(node));
     address->data = 0; // The first element of the list is its length. It is 0 when creating the list
     address->next = NULL;
     return (int64_t)address;
@@ -404,8 +416,8 @@ extern int64_t peducoml_alloc_list()
 extern int64_t peducoml_add_to_list(int64_t list_ptr, int64_t data)
 {
     node *head = (node *)list_ptr;
-    node *new_elem = (node *)malloc(sizeof(node));
-    node *new_head = (node *)malloc(sizeof(node));
+    node *new_elem = (node *)my_malloc(sizeof(node));
+    node *new_head = (node *)my_malloc(sizeof(node));
     new_elem->data = data;
     new_elem->next = head->next;
     new_head->data = head->data + 1; // Since we add the element, the list's length is increased by 1
@@ -427,7 +439,7 @@ extern int64_t peducoml_list_field(int64_t list_ptr, int64_t index)
 extern int64_t peducoml_tail(int64_t list_ptr)
 {
     node *head = (node *)list_ptr;
-    node *new_elem = (node *)malloc(sizeof(node));
+    node *new_elem = (node *)my_malloc(sizeof(node));
     new_elem->data = head->data - 1;
     new_elem->next = head->next->next;
     return (int64_t)new_elem;
@@ -539,13 +551,13 @@ extern int64_t concat_lists(int64_t list1_ptr, int64_t list2_ptr)
     node *head2 = (node *)list2_ptr;
     int64_t length1 = head1->data;
     int64_t length2 = head2->data;
-    node *result = (node *)malloc(sizeof(node));
+    node *result = (node *)my_malloc(sizeof(node));
     result->data = 0;
     node *current_result = result;
     node *current = head1->next;
     for (int64_t i = 0; i < length1; i++)
     {
-        node *new_node = (node *)malloc(sizeof(node));
+        node *new_node = (node *)my_malloc(sizeof(node));
         new_node->data = current->data;
         current_result->next = new_node;
         current_result = new_node;
@@ -555,7 +567,7 @@ extern int64_t concat_lists(int64_t list1_ptr, int64_t list2_ptr)
     current = head2->next;
     for (int64_t i = 0; i < length2; i++)
     {
-        node *new_node = (node *)malloc(sizeof(node));
+        node *new_node = (node *)my_malloc(sizeof(node));
         new_node->data = current->data;
         current_result->next = new_node;
         current_result = new_node;

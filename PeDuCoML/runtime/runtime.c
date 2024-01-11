@@ -2,9 +2,9 @@
 #include <stdint.h>
 #include <malloc.h>
 #include <stdlib.h>
-// #ifdef __riscv
+#ifdef __riscv
 #include "gc.h"
-// #endif
+#endif
 // Application processing
 
 void *my_malloc(size_t __size)

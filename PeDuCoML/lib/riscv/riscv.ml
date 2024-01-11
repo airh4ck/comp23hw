@@ -7,8 +7,8 @@ open Typing
 open Peducoml_runtime
 open Peducoml_stdlib
 
-let generated_asm = ref ""
-let append code = generated_asm := !generated_asm ^ code
+let generated_asm = Buffer.create 100
+let append code = Buffer.add_string generated_asm code
 
 type rv_type =
   | Imm
@@ -24,7 +24,7 @@ type rv_value =
 let replace_offset offset =
   let with_replaced_stack_offset =
     Base.String.substr_replace_all
-      !generated_asm
+      (Buffer.contents generated_asm)
       ~pattern:"STACK_OFFSET"
       ~with_:(string_of_int offset)
   in
@@ -40,7 +40,7 @@ let replace_offset offset =
       ~pattern:"S0_OFFSET"
       ~with_:(string_of_int (offset - 16))
   in
-  generated_asm := "";
+  Buffer.reset generated_asm;
   with_replaced_s0_offset
 ;;
 

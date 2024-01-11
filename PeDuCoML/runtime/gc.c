@@ -143,8 +143,3 @@ void check_pointer(int64_t ptr, int64_t cur_stack)
     }
     return ptr;
 }
-
-void print_int(int64_t s_top)
-{
-    fprintf(stderr, "Stack top: %ld\n", s_top);
-}

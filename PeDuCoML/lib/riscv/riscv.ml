@@ -129,6 +129,7 @@ let declare_function name arg_list =
     name
     name
   |> append;
+  if name = "main" then append "    call gc_init\n";
   current_s0_offset := -24;
   let arg_list =
     Base.List.foldi arg_list ~init:[] ~f:(fun ind acc arg ->
@@ -206,7 +207,8 @@ let build_lte left_operand right_operand = build_gte right_operand left_operand
 let build_gt left_operand right_operand = build_lt right_operand left_operand
 
 (** [build_ret v] creates a [ret] instruction. *)
-let build_ret value =
+let build_ret func_name value =
+  if func_name = "main" then append "    call peducoml_destroy\n";
   if value.value <> "a0"
   then sprintf "%s\n" (get_load_instruction "a0" value.value value.typ) |> append;
   let current_stack_offset = -1 * !current_s0_offset in

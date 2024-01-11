@@ -193,7 +193,7 @@ let codegen_global_scope_function args_numbers (func : global_scope_function) =
         [ body; const_int num_args ]
     | _ -> body
   in
-  build_ret body;
+  build_ret function_name body;
   ok func_rv_value
 ;;
 

@@ -29,7 +29,7 @@ val build_lt : rv_value -> rv_value -> rv_value
 val build_gte : rv_value -> rv_value -> rv_value
 val build_lte : rv_value -> rv_value -> rv_value
 val build_gt : rv_value -> rv_value -> rv_value
-val build_ret : rv_value -> unit
+val build_ret : string -> rv_value -> unit
 val params : rv_value -> int option
 val build_neg : rv_value -> rv_value
 val build_not : rv_value -> rv_value

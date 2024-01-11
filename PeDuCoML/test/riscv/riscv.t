@@ -41,6 +41,7 @@
       addi sp,sp,40
       ret
   $ riscv64-linux-gnu-gcc -static -o riscv_test.out riscv_test.S -L../../runtime/ -l:libruntime.a
+# TODO: link the gc library in the command above
   $ qemu-riscv64-static riscv_test.out 
   2
   $ ./riscv_test.exe <<- EOF > riscv_test.S

@@ -20,9 +20,6 @@ let print_riscv code =
        let defunced = run_lambda_lifting closure in
        let match_free = elim_match defunced in
        let anf = run_anf_conversion match_free in
-       (* Base.List.iter
-          ~f:(fun func -> Format.printf "%a\n" pp_global_scope_function func)
-          anf *)
        (match codegen anf with
         | Ok _ -> ()
         | Error _ -> failwith "LOL")

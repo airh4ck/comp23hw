@@ -144,10 +144,26 @@ let rec codegen_cexpr args_number env = function
     let joinup_label = get_basicblock "JB" in
     build_beq condition false_label;
     let* true_branch = codegen_aexpr args_number env true_branch in
+    let true_branch =
+      match params true_branch with
+      | None -> true_branch
+      | Some num_args ->
+        build_call
+          (lookup_function_exn "peducoml_alloc_closure")
+          [ true_branch; const_int num_args ]
+    in
     let _ = build_store_dst true_branch alloca in
     build_jump joinup_label;
     build_basicblock false_label;
     let* false_branch = codegen_aexpr args_number env false_branch in
+    let false_branch =
+      match params false_branch with
+      | None -> false_branch
+      | Some num_args ->
+        build_call
+          (lookup_function_exn "peducoml_alloc_closure")
+          [ false_branch; const_int num_args ]
+    in
     let _ = build_store_dst false_branch alloca in
     build_basicblock joinup_label;
     ok alloca

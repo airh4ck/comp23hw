@@ -23,11 +23,6 @@ void peducoml_init(int64_t sb)
     block->size = INITIAL_SIZE;
 }
 
-int gc_get_stack_bottom()
-{
-    fprintf(stderr, "Stack bottom: %ld\n", stack_bottom);
-}
-
 void peducoml_destroy()
 {
     free(pool->current_bank);
@@ -91,7 +86,6 @@ void *peducoml_alloc(size_t size)
     void *alloc = peducoml_alloc_in_bank(size, pool->current_bank);
     if (alloc != NULL)
     {
-        fprintf(stderr, "Returning allocated addr: %ld\n", alloc);
         return alloc;
     }
 
@@ -99,19 +93,14 @@ void *peducoml_alloc(size_t size)
     alloc = peducoml_alloc_in_bank(size, pool->current_bank);
     if (alloc != NULL)
     {
-        fprintf(stderr, "Returning allocated addr: %ld\n", alloc);
         return alloc;
     }
-    fprintf(stderr, "Heap out of memory\n");
+
     exit(1);
 }
 
-void swap(void *left, void *right)
 void peducoml_free(void *ptr)
 {
-    int64_t tmp = left;
-    left = right;
-    right = tmp;
     if (ptr == NULL)
         return;
 
@@ -141,28 +130,18 @@ void peducoml_free(void *ptr)
 
 void gc()
 {
-    fprintf(stderr, "INFO_SIZE is %ld\n", INFO_SIZE);
-    fprintf(stderr, "Starting garbage collection\n");
-    print_blocks();
     mm_block *block = pool->secondary_bank;
     block->is_free = 1;
     block->size = INITIAL_SIZE;
     gc_stack_scan(stack_bottom);
-    fprintf(stderr, "Before swap: cur=%ld sec=%ld\n", pool->current_bank, pool->secondary_bank);
-    // swap(pool->current_bank, pool->secondary_bank);
     void *tmp = pool->current_bank;
     pool->current_bank = pool->secondary_bank;
     pool->secondary_bank = tmp;
-    fprintf(stderr, "After swap: cur=%ld sec=%ld\n", pool->current_bank, pool->secondary_bank);
 }
 
-void check_pointer(int64_t ptr, int64_t cur_stack)
 {
-    fprintf(stderr, "Current pool range is [%ld, %ld)\n", pool->current_bank, pool->current_bank + INITIAL_SIZE);
-    fprintf(stderr, "Checking pointer %ld\n", ptr);
     if (pool->current_bank <= ptr && ptr < pool->current_bank + INITIAL_SIZE)
     {
-        fprintf(stderr, "Pointer %ld\n is a pointer to the heap\n", ptr);
         mm_block *block = (mm_block *)(ptr - INFO_SIZE);
         void *new_location = peducoml_alloc_in_bank(block->size, pool->secondary_bank);
         return (int64_t)new_location;

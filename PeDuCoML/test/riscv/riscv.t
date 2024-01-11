@@ -8,12 +8,14 @@
       sd ra,16(sp)
       sd s0,8(sp)
       addi s0,sp,24
+      call gc_init
+      call peducoml_destroy
       li a0,2
       ld ra,16(sp)
       ld s0,8(sp)
       addi sp,sp,24
       ret
-  $ riscv64-linux-gnu-gcc -static riscv_test.S -o riscv_test.out
+  $ riscv64-linux-gnu-gcc -static riscv_test.S -o riscv_test.out -L../../runtime/ -l:libruntime.a
   $ qemu-riscv64-static riscv_test.out
   [2]
   $ ./riscv_test.exe <<- EOF | tee riscv_test.S
@@ -26,6 +28,7 @@
       sd ra,32(sp)
       sd s0,24(sp)
       addi s0,sp,40
+      call gc_init
       lui a0, %hi(print_int)
       addi a0, a0, %lo(print_int)
       li a1,1
@@ -35,13 +38,13 @@
       li a1,2
       call peducoml_apply
       sd a0,-32(s0)
+      call peducoml_destroy
       ld a0,-32(s0)
       ld ra,32(sp)
       ld s0,24(sp)
       addi sp,sp,40
       ret
   $ riscv64-linux-gnu-gcc -static -o riscv_test.out riscv_test.S -L../../runtime/ -l:libruntime.a
-# TODO: link the gc library in the command above
   $ qemu-riscv64-static riscv_test.out 
   2
   $ ./riscv_test.exe <<- EOF > riscv_test.S

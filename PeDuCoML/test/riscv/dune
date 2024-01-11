@@ -5,8 +5,5 @@
  (link_deps
   (file ../../runtime/libruntime.a)))
 
-; TODO: add dependencies for generated static GC library (in case it is separate from libruntime.a)
-; otherwise nothing to do here
-
 (cram
  (deps ./riscv_test.exe ../../runtime/libruntime.a))

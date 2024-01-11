@@ -5,7 +5,7 @@
 static mempool *pool = NULL;
 static int64_t stack_bottom = 0;
 const size_t INFO_SIZE = sizeof(mm_block);
-const size_t INITIAL_SIZE = 64;
+const size_t INITIAL_SIZE = 1048576;
 
 void peducoml_init(int64_t sb)
 {
@@ -52,18 +52,29 @@ void *peducoml_alloc_in_bank(size_t size, void *bank)
     mm_block *next_block = cur + INFO_SIZE + size;
     if (size != cur_block->size)
     {
-        if (INFO_SIZE > cur_block->size - size)
+        if (cur_block->size > size + INFO_SIZE)
         {
+            size_t prev_size = cur_block->size;
             cur_block->size = size;
+
             cur_block->is_free = 0;
+
+            if (next_block < bank + INITIAL_SIZE)
+            {
+                next_block->is_free = 1;
+                next_block->size = prev_size - size - INFO_SIZE;
+            }
+
             return cur + INFO_SIZE;
         }
-        next_block->is_free = 1;
-        next_block->size = cur_block->size - size - INFO_SIZE;
+
+        cur_block->is_free = 0;
+        return cur + INFO_SIZE;
     }
 
     cur_block->is_free = 0;
     cur_block->size = size;
+
     return cur + INFO_SIZE;
 }
 
@@ -76,6 +87,10 @@ void print_blocks()
     while (current < pool->current_bank + INITIAL_SIZE)
     {
         fprintf(stderr, "Block %ld: pointer=%ld is_free=%ld size=%ld\n", cnt++, current + INFO_SIZE, block->is_free, block->size);
+        if (block->size <= 0)
+        {
+            exit(1);
+        }
         current += block->size + INFO_SIZE;
         block = current;
     }
@@ -83,6 +98,10 @@ void print_blocks()
 
 void *peducoml_alloc(size_t size)
 {
+    if (size <= 0)
+    {
+        return NULL;
+    }
     void *alloc = peducoml_alloc_in_bank(size, pool->current_bank);
     if (alloc != NULL)
     {
@@ -139,6 +158,7 @@ void gc()
     pool->secondary_bank = tmp;
 }
 
+int64_t check_pointer(int64_t ptr, int64_t cur_stack)
 {
     if (pool->current_bank <= ptr && ptr < pool->current_bank + INITIAL_SIZE)
     {

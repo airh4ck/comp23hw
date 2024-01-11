@@ -18,4 +18,4 @@ void peducoml_destroy();
 
 void *peducoml_alloc(size_t size);
 
-void check_pointer(int64_t ptr, int64_t cur_stack);
+int64_t check_pointer(int64_t ptr, int64_t cur_stack);

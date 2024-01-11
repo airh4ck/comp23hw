@@ -41,6 +41,7 @@ gc_stack_scan:
     sd t0, 0(sp)
     call check_pointer
     ld t0, 0(sp)
+    sd a0, 0(t0)
     addi t0, t0, 8
     j .Lstack_loop
 .Lloop_break:

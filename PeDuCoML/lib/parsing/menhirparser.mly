@@ -202,7 +202,9 @@ unary_operation : op = unop arg = unop_content { eunary_operation op arg }
     | id = identifier { eidentifier id } 
     | LBR e = binary_operation RBR { e }
 
-application : func = l_app arg = r_app { eapplication func arg }
+application : 
+    | func = l_app arg = r_app { eapplication func arg }
+    | LBR app = application RBR { app }
 
 l_app :
     | LBR func = letin RBR { func }

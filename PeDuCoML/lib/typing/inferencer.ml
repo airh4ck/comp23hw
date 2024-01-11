@@ -88,8 +88,6 @@ end
 type fresh = int
 
 module Type = struct
-  type t = typ
-
   let rec occurs_in v = function
     | TVar b -> b = v
     | TArr (l, r) -> occurs_in v l || occurs_in v r
@@ -222,8 +220,6 @@ module VarSet = struct
 end
 
 module Scheme = struct
-  type t = scheme
-
   let free_vars = function
     | s, t -> Base.Set.diff (Type.free_vars t) s
   ;;
@@ -240,10 +236,13 @@ module TypeEnv = struct
   let extend env id scheme = Base.Map.set env ~key:id ~data:scheme
   let empty = Base.Map.empty (module Base.String)
 
-  let free_vars : t -> (type_variable_number, Base.Int.comparator_witness) Base.Set.t =
+  let free_vars ~name ~is_rec
+    : t -> (type_variable_number, Base.Int.comparator_witness) Base.Set.t
+    =
     Base.Map.fold
       ~init:(Base.Set.empty (module Base.Int))
-      ~f:(fun ~key:_ ~data acc -> Base.Set.union acc (Scheme.free_vars data))
+      ~f:(fun ~key ~data acc ->
+        if key <> name && is_rec then Base.Set.union acc (Scheme.free_vars data) else acc)
   ;;
 
   let apply s env = Base.Map.map env ~f:(Scheme.apply s)
@@ -266,9 +265,8 @@ let instantiate : scheme -> typ R.t =
     set
 ;;
 
-let generalize : TypeEnv.t -> Type.t -> Scheme.t =
-  fun env typ ->
-  let free = Base.Set.diff (Type.free_vars typ) (TypeEnv.free_vars env) in
+let generalize name is_rec env typ =
+  let free = Base.Set.diff (Type.free_vars typ) (TypeEnv.free_vars env ~name ~is_rec) in
   free, typ
 ;;
 
@@ -462,9 +460,10 @@ let infer =
       let rec process_list subst env = function
         | [] -> return (subst, env)
         | elem :: tail ->
-          let* identifier =
+          let* identifier, is_rec =
             match elem with
-            | DDeclaration (id, _, _) | DRecursiveDeclaration (id, _, _) -> return id
+            | DDeclaration (id, _, _) -> return (id, false)
+            | DRecursiveDeclaration (id, _, _) -> return (id, true)
           in
           let* fresh_var = fresh_var in
           let env' =
@@ -472,7 +471,7 @@ let infer =
           in
           let* elem_subst, elem_typ = declaration_helper env' elem in
           let env'' = TypeEnv.apply elem_subst env' in
-          let generalized_type = generalize env'' elem_typ in
+          let generalized_type = generalize identifier is_rec env'' elem_typ in
           let* subst'' = Subst.compose subst elem_subst in
           process_list subst'' (TypeEnv.extend env'' identifier generalized_type) tail
       in
@@ -519,7 +518,7 @@ let check_types (program : declaration list) =
       (match head with
        | DDeclaration (name, _, _) ->
          let* _, function_type = infer environment head in
-         let generalized_type = generalize environment function_type in
+         let generalized_type = generalize name false environment function_type in
          let* tail = helper (TypeEnv.extend environment name generalized_type) tail in
          return @@ ((name, generalized_type) :: tail)
        | DRecursiveDeclaration (name, _, _) ->
@@ -534,7 +533,9 @@ let check_types (program : declaration list) =
          let* subst' = unify (Subst.apply subst type_variable) typ in
          let* final_subst = Subst.compose subst' subst in
          let env = TypeEnv.apply final_subst env in
-         let generalized_type = generalize env (Subst.apply final_subst type_variable) in
+         let generalized_type =
+           generalize name true env (Subst.apply final_subst type_variable)
+         in
          let* tail = helper (TypeEnv.extend environment name generalized_type) tail in
          return @@ ((name, generalized_type) :: tail))
     | _ -> return []

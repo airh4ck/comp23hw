@@ -69,6 +69,7 @@
   main: bool
   $ ./inferencer_test.exe <<- EOF
   > let rec id x = x
-  > let main = print_int (id id 5) 
+  > let main = id id 5
   > EOF
-  main: bool
+  id: 'b -> 'b
+  main: int

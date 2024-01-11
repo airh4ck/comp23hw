@@ -10,10 +10,19 @@
 void *my_malloc(size_t __size)
 {
 #ifdef __riscv
-    fprintf(stderr, "Using custom malloc\n");
+    // fprintf(stderr, "Using custom malloc\n");
     return peducoml_alloc(__size);
 #else
     return malloc(__size);
+#endif
+}
+
+void *my_free(void *ptr)
+{
+#ifdef __riscv
+    peducoml_free(ptr);
+#else
+    free(ptr);
 #endif
 }
 
@@ -58,7 +67,7 @@ static void realloc_ptrs_storage()
         new_storage_index++;
     }
 
-    free(closure_ptrs);
+    my_free(closure_ptrs);
 
     closure_ptrs = new_storage;
 }
@@ -377,8 +386,8 @@ extern int64_t peducoml_apply(int64_t ptr, int64_t arg)
             break;
         }
 
-        free(closure_ptr->applied_args);
-        free(closure_ptr);
+        my_free(closure_ptr->applied_args);
+        my_free(closure_ptr);
 
         return result;
     }
